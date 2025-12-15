@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -636,7 +637,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="button" class="btn btn-primary" onclick="simpanData()">
+                    <button type="button" class="btn btn-primary" id="btnSimpan" onclick="simpanData()">
                         <i class="bi bi-save"></i> Simpan Data
                     </button>
                 </div>
@@ -660,6 +661,8 @@
         let kodeKlasifikasi = [];
         let arsipTable;
         let modalTambah;
+        let isEditMode = false;
+        let editingNoArsip = null;
 
         // Toggle Sidebar
         function toggleSidebar() {
@@ -895,19 +898,10 @@
                         defaultContent: '-'
                     },
                     {
-                        data: 'id',
+                        data: null,
                         orderable: false,
                         render: function(data) {
-                            return `
-                                <div class="btn-group btn-group-sm" role="group">
-                                    <button class="btn btn-outline-primary" onclick="editArsip(${data})" title="Edit">
-                                        <i class="bi bi-pencil"></i>
-                                    </button>
-                                    <button class="btn btn-outline-danger" onclick="hapusArsip(${data})" title="Hapus">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </div>
-                            `;
+                            return ''; // Akan diisi di drawCallback
                         }
                     }
                 ],
@@ -926,15 +920,19 @@
                 drawCallback: function() {
                     var api = this.api();
                     var rows = api.rows({page: 'current'}).nodes();
+                    var allData = api.rows({page: 'current'}).data().toArray();
                     var lastGroup = null;
+                    var seenNoArsip = {}; // Track No Arsip yang sudah muncul di halaman ini
 
                     api.rows({page: 'current'}).every(function(rowIdx) {
                         var data = this.data();
                         var nomor = data.hal && data.hal.nomor ? data.hal.nomor : '';
                         var judul = data.hal && data.hal.judul_berkas ? data.hal.judul_berkas : '';
                         var kode = data.kode && data.kode.Kode ? data.kode.Kode : '';
+                        var noArsip = data.no_arsip || '';
                         var currentGroup = nomor + '|' + judul + '|' + kode;
 
+                        // Handle grouping untuk No Berkas, Judul, dan Kode Klasifikasi
                         if (lastGroup === currentGroup && lastGroup !== '') {
                             $(rows[rowIdx]).find('td:eq(1)').html('');
                             $(rows[rowIdx]).find('td:eq(2)').html('');
@@ -959,6 +957,31 @@
                                 'vertical-align': 'middle',
                                 'background-color': '#f8f9fa'
                             });
+                        }
+
+                        // Handle tombol Edit/Delete - hanya tampil sekali per No Arsip
+                        var aksiCell = $(rows[rowIdx]).find('td:eq(10)'); // Kolom Aksi
+
+                        // Cek apakah ini kemunculan pertama no_arsip di halaman ini
+                        if (noArsip && !seenNoArsip[noArsip]) {
+                            // Tandai bahwa no_arsip ini sudah muncul
+                            seenNoArsip[noArsip] = true;
+
+                            // Tampilkan tombol
+                            aksiCell.html(`
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button class="btn btn-outline-primary" onclick="editArsip('${noArsip}')" title="Edit Semua Item dengan No Arsip ${noArsip}">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-outline-danger" onclick="hapusArsip('${noArsip}')" title="Hapus Semua Item dengan No Arsip ${noArsip}">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            `);
+                        } else {
+                            // No Arsip sudah pernah muncul sebelumnya atau kosong
+                            aksiCell.html('');
+                            aksiCell.css('border-top', 'none');
                         }
 
                         lastGroup = currentGroup;
