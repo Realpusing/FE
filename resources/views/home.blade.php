@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -37,160 +36,15 @@
             z-index: -1;
         }
 
-        /* Sidebar Styles */
-        .sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            height: 100vh;
-            width: 260px;
-            background: linear-gradient(180deg, #1a237e 0%, #283593 50%, #3f51b5 100%);
-            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
-            z-index: 1000;
-            transition: all 0.3s ease;
-            overflow-y: auto;
-        }
-
-        .sidebar.collapsed {
-            width: 70px;
-        }
-
-        .sidebar-header {
-            padding: 1.5rem;
-            text-align: center;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            background: rgba(0, 0, 0, 0.2);
-        }
-
-        .sidebar-logo {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background: white;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 0.5rem;
-            transition: all 0.3s ease;
-        }
-
-        .sidebar-logo i {
-            font-size: 1.5rem;
-            color: #1a237e;
-        }
-
-        .sidebar.collapsed .sidebar-logo {
-            width: 40px;
-            height: 40px;
-        }
-
-        .sidebar-title {
-            color: white;
-            font-size: 1.1rem;
-            font-weight: 700;
-            margin: 0;
-            transition: all 0.3s ease;
-        }
-
-        .sidebar.collapsed .sidebar-title {
-            font-size: 0;
-            opacity: 0;
-        }
-
-        .sidebar-menu {
-            padding: 1rem 0;
-        }
-
-        .menu-item {
-            display: flex;
-            align-items: center;
-            padding: 0.9rem 1.5rem;
-            color: rgba(255, 255, 255, 0.9);
-            text-decoration: none;
-            transition: all 0.3s ease;
-            position: relative;
-            cursor: pointer;
-        }
-
-        .menu-item:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            padding-left: 2rem;
-        }
-
-        .menu-item.active {
-            background: rgba(255, 255, 255, 0.15);
-            color: white;
-            border-left: 4px solid #ff9800;
-        }
-
-        .menu-item i {
-            font-size: 1.3rem;
-            margin-right: 1rem;
-            min-width: 24px;
-            transition: all 0.3s ease;
-        }
-
-        .sidebar.collapsed .menu-item i {
-            margin-right: 0;
-        }
-
-        .menu-item span {
-            transition: all 0.3s ease;
-        }
-
-        .sidebar.collapsed .menu-item span {
-            opacity: 0;
-            width: 0;
-            overflow: hidden;
-        }
-
-        .menu-separator {
-            height: 1px;
-            background: rgba(255, 255, 255, 0.1);
-            margin: 1rem 1.5rem;
-        }
-
-        .sidebar-toggle {
-            position: absolute;
-            top: 1.5rem;
-            right: -15px;
-            width: 30px;
-            height: 30px;
-            background: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-            transition: all 0.3s ease;
-            z-index: 1001;
-        }
-
-        .sidebar-toggle:hover {
-            background: #ff9800;
-            color: white;
-            transform: scale(1.1);
-        }
-
-        .sidebar-toggle i {
-            transition: transform 0.3s ease;
-        }
-
-        .sidebar.collapsed .sidebar-toggle i {
-            transform: rotate(180deg);
-        }
-
-        /* Main Content */
         .main-content {
             margin-left: 260px;
-            transition: all 0.3s ease;
+            transition: margin-left 0.35s cubic-bezier(0.4, 0, 0.2, 1);
             padding: 2rem;
             min-height: 100vh;
         }
 
-        .main-content.expanded {
+        .sidebar.collapsed ~ .main-content,
+        .main-content.sidebar-collapsed {
             margin-left: 70px;
         }
 
@@ -379,6 +233,17 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
 
+        /* Styling untuk row yang di-group */
+        .grouped-row td {
+            border-top: none !important;
+        }
+
+        .action-group-cell {
+            vertical-align: middle !important;
+            background-color: #f8f9fa !important;
+            font-weight: 600;
+        }
+
         .btn {
             border-radius: 2rem;
             padding: 0.75rem 1.5rem;
@@ -457,16 +322,7 @@
             to { opacity: 1; }
         }
 
-        /* Responsive */
         @media (max-width: 768px) {
-            .sidebar {
-                width: 70px;
-            }
-
-            .sidebar.collapsed {
-                width: 0;
-            }
-
             .main-content {
                 margin-left: 70px;
             }
@@ -478,64 +334,16 @@
     </style>
 </head>
 <body>
-    <!-- Sidebar -->
-    <div class="sidebar" id="sidebar">
-        <div class="sidebar-toggle" onclick="toggleSidebar()">
-            <i class="bi bi-chevron-left"></i>
-        </div>
+    {{-- Sertakan sidebar agar elemen dengan id="sidebar" ada untuk skrip --}}
+    @include('sidebar')
 
-        <div class="sidebar-header">
-            <div class="sidebar-logo">
-                <i class="bi bi-archive-fill"></i>
-            </div>
-            <h5 class="sidebar-title">Sistem Arsip</h5>
-        </div>
-
-        <div class="sidebar-menu">
-            <a href="#" class="menu-item active" onclick="navigateTo('dashboard')">
-                <i class="bi bi-speedometer2"></i>
-                <span>Dashboard</span>
-            </a>
-            <a href="#" class="menu-item" onclick="navigateTo('arsip')">
-                <i class="bi bi-folder2-open"></i>
-                <span>Data Arsip</span>
-            </a>
-            <a href="#" class="menu-item" onclick="navigateTo('klasifikasi')">
-                <i class="bi bi-tags"></i>
-                <span>Klasifikasi</span>
-            </a>
-            <a href="#" class="menu-item" onclick="navigateTo('laporan')">
-                <i class="bi bi-file-earmark-bar-graph"></i>
-                <span>Laporan</span>
-            </a>
-
-            <div class="menu-separator"></div>
-
-            <a href="#" class="menu-item" onclick="navigateTo('pengaturan')">
-                <i class="bi bi-gear"></i>
-                <span>Pengaturan</span>
-            </a>
-            <a href="#" class="menu-item" onclick="navigateTo('bantuan')">
-                <i class="bi bi-question-circle"></i>
-                <span>Bantuan</span>
-            </a>
-            <a href="#" class="menu-item" onclick="navigateTo('logout')">
-                <i class="bi bi-box-arrow-right"></i>
-                <span>Keluar</span>
-            </a>
-        </div>
-    </div>
-
-    <!-- Main Content -->
     <div class="main-content" id="mainContent">
         <div class="container-fluid">
-            <!-- Header -->
             <div class="header-section text-center shadow-sm">
                 <h1 class="mb-2"><i class="bi bi-folder2-open"></i> Sistem Manajemen Arsip</h1>
                 <p class="mb-0">Daftar Berkas dan Item Arsip</p>
             </div>
 
-            <!-- Action Bar -->
             <div class="card shadow-sm mb-4">
                 <div class="card-body">
                     <div class="row g-3 align-items-center">
@@ -558,7 +366,6 @@
                 </div>
             </div>
 
-            <!-- Table -->
             <div class="card shadow-sm">
                 <div class="card-body">
                     <div class="table-responsive">
@@ -587,7 +394,6 @@
         </div>
     </div>
 
-    <!-- Modal Tambah Data -->
     <div class="modal fade" id="modalTambah" tabindex="-1" aria-labelledby="modalTambahLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content">
@@ -599,7 +405,6 @@
                 </div>
                 <div class="modal-body">
                     <form id="formTambahArsip">
-                        <!-- Informasi Berkas -->
                         <div class="berkas-info-section mb-4">
                             <h5 class="mb-3 text-secondary">
                                 <i class="bi bi-clipboard-data"></i> Informasi Berkas
@@ -621,7 +426,6 @@
 
                         <hr class="my-4">
 
-                        <!-- Item Arsip Section -->
                         <div class="item-arsip-section">
                             <h5 class="mb-3 text-secondary">
                                 <i class="bi bi-file-earmark-text"></i> Item Arsip
@@ -637,7 +441,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="button" class="btn btn-primary" id="btnSimpan" onclick="simpanData()">
+                    <button type="button" class="btn btn-primary" onclick="simpanData()">
                         <i class="bi bi-save"></i> Simpan Data
                     </button>
                 </div>
@@ -645,13 +449,101 @@
         </div>
     </div>
 
-    <!-- jQuery -->
+    <!-- Modal untuk Edit/Hapus Group -->
+    <div class="modal fade" id="modalGroupAction" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Pilih Aksi untuk Group</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3">Data yang akan diproses:</p>
+                    <div id="groupDataInfo" class="alert alert-info"></div>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary btn-lg" onclick="editGroup()">
+                            <i class="bi bi-pencil"></i> Edit Semua Data dalam Group
+                        </button>
+                        <button class="btn btn-outline-danger btn-lg" onclick="hapusGroup()">
+                            <i class="bi bi-trash"></i> Hapus Semua Data dalam Group
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Edit Data -->
+    <div class="modal fade" id="modalEdit" tabindex="-1" aria-labelledby="modalEditLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="modalEditLabel">
+                        <i class="bi bi-pencil-square"></i> Edit Data Arsip
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="edit_info_berkas" class="alert alert-info mb-3"></div>
+
+                    <form id="formEditArsip">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">No Item Arsip <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="edit_no_arsip" name="no_arsip" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Kode Klasifikasi <span class="text-danger">*</span></label>
+                                <select class="form-select" id="edit_kode_klasifikasi" name="kode_klasifikasi" required>
+                                    <option value="">-- Pilih Kode --</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Uraian Informasi <span class="text-danger">*</span></label>
+                                <textarea class="form-control" id="edit_uraian" name="uraian_informasi" rows="3" required></textarea>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Tanggal <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="edit_tanggal" name="tanggal" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Jumlah <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="edit_jumlah" name="jumlah" required min="0">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Satuan <span class="text-danger">*</span></label>
+                                <select class="form-select" id="edit_satuan" name="satuan" required>
+                                    <option value="">-- Pilih --</option>
+                                    <option value="lembar">Lembar</option>
+                                    <option value="berkas">Berkas</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Klasifikasi Keamanan <span class="text-danger">*</span></label>
+                                <select class="form-select" id="edit_keamanan" name="keamanan" required>
+                                    <option value="biasa">Biasa</option>
+                                    <option value="rahasia">Rahasia</option>
+                                    <option value="super-rahasia">Super Rahasia</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Keterangan</label>
+                                <input type="text" class="form-control" id="edit_keterangan" name="keterangan">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-primary" onclick="updateArsip()">
+                        <i class="bi bi-save"></i> Update Data
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-
-    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-    <!-- DataTables JS -->
     <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
     <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
@@ -661,52 +553,11 @@
         let kodeKlasifikasi = [];
         let arsipTable;
         let modalTambah;
-        let isEditMode = false;
-        let editingNoArsip = null;
+        let modalGroupAction;
+        let modalEdit;
+        let currentGroupIds = [];
+        let currentEditId = null;
 
-        // Toggle Sidebar
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const mainContent = document.getElementById('mainContent');
-            sidebar.classList.toggle('collapsed');
-            mainContent.classList.toggle('expanded');
-        }
-
-        // Navigate Menu
-        function navigateTo(page) {
-            document.querySelectorAll('.menu-item').forEach(item => {
-                item.classList.remove('active');
-            });
-
-            event.currentTarget.classList.add('active');
-
-            switch(page) {
-                case 'dashboard':
-                    alert('Navigasi ke Dashboard');
-                    break;
-                case 'arsip':
-                    break;
-                case 'klasifikasi':
-                    alert('Navigasi ke Klasifikasi');
-                    break;
-                case 'laporan':
-                    alert('Navigasi ke Laporan');
-                    break;
-                case 'pengaturan':
-                    alert('Navigasi ke Pengaturan');
-                    break;
-                case 'bantuan':
-                    alert('Navigasi ke Bantuan');
-                    break;
-                case 'logout':
-                    if(confirm('Apakah Anda yakin ingin keluar?')) {
-                        alert('Logout');
-                    }
-                    break;
-            }
-        }
-
-        // Generate No Berkas otomatis
         async function generateNoBerkas(kodeKlasifikasi) {
             const noBerkasInput = document.getElementById('no_berkas');
 
@@ -742,7 +593,6 @@
             }
         }
 
-        // Load kode klasifikasi dari API
         async function loadKodeKlasifikasi() {
             try {
                 const response = await fetch('http://127.0.0.1:8000/api/klasifikasi', {
@@ -763,6 +613,7 @@
                         detail: item.Detail_kode
                     }));
 
+                    console.log('Kode klasifikasi loaded:', kodeKlasifikasi.length, 'items');
                     updateKlasifikasiDropdown();
                 } else {
                     throw new Error('Format data tidak sesuai');
@@ -773,6 +624,17 @@
         }
 
         function updateKlasifikasiDropdown() {
+            // Update dropdown di form edit
+            const editDropdown = document.getElementById('edit_kode_klasifikasi');
+            if (editDropdown && kodeKlasifikasi.length > 0) {
+                editDropdown.innerHTML = '<option value="">-- Pilih Kode --</option>';
+                kodeKlasifikasi.forEach(item => {
+                    editDropdown.innerHTML += `<option value="${item.kode}">${item.kode} - ${item.detail}</option>`;
+                });
+                console.log('Edit dropdown populated with', kodeKlasifikasi.length, 'options');
+            }
+
+            // Update dropdown di form tambah
             const existingDropdown = document.querySelector('select[name="kode_klasifikasi[]"]');
             if (existingDropdown) {
                 existingDropdown.innerHTML = '<option value="">-- Pilih Kode Klasifikasi --</option>';
@@ -790,13 +652,13 @@
             }
         }
 
-        // Initialize DataTable
         function initDataTable() {
             arsipTable = $('#arsipTable').DataTable({
                 ajax: {
                     url: 'http://127.0.0.1:8000/api/berkas',
                     type: 'GET',
                     dataSrc: function(json) {
+                        console.log('DataTable loaded:', json);
                         if (json.data) {
                             return json.data;
                         } else if (Array.isArray(json)) {
@@ -898,10 +760,10 @@
                         defaultContent: '-'
                     },
                     {
-                        data: null,
+                        data: 'id',
                         orderable: false,
                         render: function(data) {
-                            return ''; // Akan diisi di drawCallback
+                            return `<div class="action-cell" data-id="${data}"></div>`;
                         }
                     }
                 ],
@@ -920,27 +782,49 @@
                 drawCallback: function() {
                     var api = this.api();
                     var rows = api.rows({page: 'current'}).nodes();
-                    var allData = api.rows({page: 'current'}).data().toArray();
-                    var lastGroup = null;
-                    var seenNoArsip = {}; // Track No Arsip yang sudah muncul di halaman ini
+                    var groupMap = {};
 
                     api.rows({page: 'current'}).every(function(rowIdx) {
                         var data = this.data();
                         var nomor = data.hal && data.hal.nomor ? data.hal.nomor : '';
                         var judul = data.hal && data.hal.judul_berkas ? data.hal.judul_berkas : '';
                         var kode = data.kode && data.kode.Kode ? data.kode.Kode : '';
-                        var noArsip = data.no_arsip || '';
+                        var groupKey = nomor + '|' + judul + '|' + kode;
+
+                        if (!groupMap[groupKey]) {
+                            groupMap[groupKey] = {
+                                ids: [],
+                                firstRowIdx: rowIdx,
+                                nomor: nomor,
+                                judul: judul,
+                                kode: kode
+                            };
+                        }
+                        groupMap[groupKey].ids.push(data.id);
+                    });
+
+                    var lastGroup = null;
+                    api.rows({page: 'current'}).every(function(rowIdx) {
+                        var data = this.data();
+                        var nomor = data.hal && data.hal.nomor ? data.hal.nomor : '';
+                        var judul = data.hal && data.hal.judul_berkas ? data.hal.judul_berkas : '';
+                        var kode = data.kode && data.kode.Kode ? data.kode.Kode : '';
                         var currentGroup = nomor + '|' + judul + '|' + kode;
 
-                        // Handle grouping untuk No Berkas, Judul, dan Kode Klasifikasi
+                        var groupInfo = groupMap[currentGroup];
+                        var groupSize = groupInfo.ids.length;
+
                         if (lastGroup === currentGroup && lastGroup !== '') {
+                            $(rows[rowIdx]).addClass('grouped-row');
                             $(rows[rowIdx]).find('td:eq(1)').html('');
                             $(rows[rowIdx]).find('td:eq(2)').html('');
                             $(rows[rowIdx]).find('td:eq(4)').html('');
+                            $(rows[rowIdx]).find('td:eq(10)').html('');
 
                             $(rows[rowIdx]).find('td:eq(1)').css('border-top', 'none');
                             $(rows[rowIdx]).find('td:eq(2)').css('border-top', 'none');
                             $(rows[rowIdx]).find('td:eq(4)').css('border-top', 'none');
+                            $(rows[rowIdx]).find('td:eq(10)').css('border-top', 'none');
                         } else {
                             $(rows[rowIdx]).find('td:eq(1)').css({
                                 'font-weight': '600',
@@ -957,31 +841,34 @@
                                 'vertical-align': 'middle',
                                 'background-color': '#f8f9fa'
                             });
-                        }
 
-                        // Handle tombol Edit/Delete - hanya tampil sekali per No Arsip
-                        var aksiCell = $(rows[rowIdx]).find('td:eq(10)'); // Kolom Aksi
+                            var actionCell = $(rows[rowIdx]).find('.action-cell');
+                            var actionHtml = '';
 
-                        // Cek apakah ini kemunculan pertama no_arsip di halaman ini
-                        if (noArsip && !seenNoArsip[noArsip]) {
-                            // Tandai bahwa no_arsip ini sudah muncul
-                            seenNoArsip[noArsip] = true;
-
-                            // Tampilkan tombol
-                            aksiCell.html(`
-                                <div class="btn-group btn-group-sm" role="group">
-                                    <button class="btn btn-outline-primary" onclick="editArsip('${noArsip}')" title="Edit Semua Item dengan No Arsip ${noArsip}">
-                                        <i class="bi bi-pencil"></i>
+                            if (groupSize > 1) {
+                                actionHtml = `
+                                    <button class="btn btn-outline-primary btn-sm"
+                                            onclick='showGroupAction(${JSON.stringify(groupInfo.ids)}, "${groupInfo.nomor}", "${groupInfo.judul}")'
+                                            title="Aksi Group (${groupSize} data)">
+                                        <i class="bi bi-gear"></i>
+                                        <span class="badge bg-primary">${groupSize}</span>
                                     </button>
-                                    <button class="btn btn-outline-danger" onclick="hapusArsip('${noArsip}')" title="Hapus Semua Item dengan No Arsip ${noArsip}">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </div>
-                            `);
-                        } else {
-                            // No Arsip sudah pernah muncul sebelumnya atau kosong
-                            aksiCell.html('');
-                            aksiCell.css('border-top', 'none');
+                                `;
+                                $(rows[rowIdx]).find('td:eq(10)').addClass('action-group-cell');
+                            } else {
+                                actionHtml = `
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button class="btn btn-outline-primary" onclick="editArsip(${data.id})" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn btn-outline-danger" onclick="hapusArsip(${data.id})" title="Hapus">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                `;
+                            }
+
+                            actionCell.html(actionHtml);
                         }
 
                         lastGroup = currentGroup;
@@ -990,7 +877,266 @@
             });
         }
 
-        // Hapus Arsip
+        function showGroupAction(ids, nomor, judul) {
+            currentGroupIds = ids;
+            const infoHtml = `
+                <strong>No Berkas:</strong> ${nomor}<br>
+                <strong>Judul:</strong> ${judul}<br>
+                <strong>Jumlah Data:</strong> ${ids.length} item
+            `;
+            document.getElementById('groupDataInfo').innerHTML = infoHtml;
+            modalGroupAction.show();
+        }
+
+        async function editGroup() {
+            alert(`Fitur edit untuk ${currentGroupIds.length} data sedang dalam pengembangan.\nID: ${currentGroupIds.join(', ')}`);
+            modalGroupAction.hide();
+        }
+
+        async function hapusGroup() {
+            if (!confirm(`Apakah Anda yakin ingin menghapus ${currentGroupIds.length} data sekaligus?`)) return;
+
+            try {
+                let successCount = 0;
+                let failCount = 0;
+
+                for (const id of currentGroupIds) {
+                    try {
+                        const response = await fetch(`http://127.0.0.1:8000/api/arsip/${id}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        });
+
+                        if (response.ok) {
+                            successCount++;
+                        } else {
+                            failCount++;
+                        }
+                    } catch (error) {
+                        failCount++;
+                        console.error(`Error deleting ID ${id}:`, error);
+                    }
+                }
+
+                modalGroupAction.hide();
+                alert(`Berhasil menghapus ${successCount} data.\n${failCount > 0 ? `Gagal: ${failCount} data.` : ''}`);
+                arsipTable.ajax.reload();
+
+            } catch (error) {
+                console.error('Error deleting group:', error);
+                alert('Terjadi kesalahan saat menghapus data');
+            }
+        }
+
+        async function editArsip(id) {
+            console.log('=== EDIT ARSIP CALLED ===');
+            console.log('ID:', id);
+            console.log('Kode Klasifikasi available:', kodeKlasifikasi.length);
+
+            // Pastikan klasifikasi sudah di-load
+            if (kodeKlasifikasi.length === 0) {
+                console.log('Loading klasifikasi first...');
+                await loadKodeKlasifikasi();
+            }
+
+            try {
+                currentEditId = id;
+                const url = `http://127.0.0.1:8000/api/arsip/${id}`;
+                console.log('Fetching from:', url);
+
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    }
+                });
+
+                console.log('Response status:', response.status);
+                console.log('Response ok:', response.ok);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Response error text:', errorText);
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+
+                const result = await response.json();
+                console.log('API Response:', JSON.stringify(result, null, 2));
+
+                if (!result.data) {
+                    throw new Error('Property "data" tidak ada dalam response');
+                }
+
+                const data = result.data;
+
+                // Populate semua field dengan console log
+                console.log('Populating form...');
+
+                const fields = {
+                    'edit_no_arsip': data.no_arsip || '',
+                    'edit_uraian': data.uraian_informasi || '',
+                    'edit_tanggal': data.tanggal || '',
+                    'edit_jumlah': data.jumlah || '',
+                    'edit_satuan': data.satuan || '',
+                    'edit_keterangan': data.Keterangan || ''
+                };
+
+                // Set semua field
+                for (const [fieldId, value] of Object.entries(fields)) {
+                    const element = document.getElementById(fieldId);
+                    if (element) {
+                        element.value = value;
+                        console.log(`✓ ${fieldId} = "${value}"`);
+                    } else {
+                        console.error(`✗ Element ${fieldId} tidak ditemukan!`);
+                    }
+                }
+
+                // Handle kode klasifikasi
+                let kodeValue = '';
+                if (data.kode && data.kode.Kode) {
+                    kodeValue = data.kode.Kode;
+                } else if (data.kode_klasifikasi) {
+                    kodeValue = data.kode_klasifikasi;
+                }
+
+                const kodeDropdown = document.getElementById('edit_kode_klasifikasi');
+                if (kodeDropdown) {
+                    console.log('Kode value:', kodeValue);
+                    console.log('Dropdown has', kodeDropdown.options.length, 'options');
+
+                    // Cek apakah value ada di dropdown
+                    let found = false;
+                    for (let i = 0; i < kodeDropdown.options.length; i++) {
+                        if (kodeDropdown.options[i].value === kodeValue) {
+                            found = true;
+                            console.log(`Found kode at index ${i}`);
+                            break;
+                        }
+                    }
+
+                    if (found) {
+                        kodeDropdown.value = kodeValue;
+                        console.log('✓ Kode klasifikasi set to:', kodeDropdown.value);
+                    } else {
+                        console.error('✗ Kode', kodeValue, 'tidak ada di dropdown!');
+                    }
+                } else {
+                    console.error('✗ Dropdown edit_kode_klasifikasi tidak ditemukan!');
+                }
+
+                // Handle keamanan
+                let keamananValue = (data.keamanan || 'biasa').toLowerCase().replace(' ', '-');
+                const keamananDropdown = document.getElementById('edit_keamanan');
+                if (keamananDropdown) {
+                    keamananDropdown.value = keamananValue;
+                    console.log('✓ Keamanan set to:', keamananDropdown.value);
+                }
+
+                // Show berkas info
+                const berkasInfoDiv = document.getElementById('edit_info_berkas');
+                if (berkasInfoDiv) {
+                    const berkasInfo = `
+                        <strong>No Berkas:</strong> ${data.hal?.nomor || '-'}<br>
+                        <strong>Judul:</strong> ${data.hal?.judul_berkas || '-'}
+                    `;
+                    berkasInfoDiv.innerHTML = berkasInfo;
+                    console.log('✓ Berkas info updated');
+                }
+
+                console.log('All fields populated, showing modal...');
+
+                // Pastikan modal element ada
+                const modalElement = document.getElementById('modalEdit');
+                if (!modalElement) {
+                    throw new Error('Modal element "modalEdit" tidak ditemukan!');
+                }
+
+                // Show modal
+                if (modalEdit) {
+                    modalEdit.show();
+                    console.log('✓ Modal shown');
+                } else {
+                    console.error('Modal instance tidak ada, creating new one...');
+                    modalEdit = new bootstrap.Modal(modalElement);
+                    modalEdit.show();
+                }
+
+                console.log('=== EDIT ARSIP COMPLETE ===');
+
+            } catch (error) {
+                console.error('=== ERROR IN EDIT ARSIP ===');
+                console.error('Error name:', error.name);
+                console.error('Error message:', error.message);
+                console.error('Error stack:', error.stack);
+                alert('Gagal memuat data:\n\n' + error.message + '\n\nCek console (F12) untuk detail lengkap.');
+            }
+        }
+
+        async function updateArsip() {
+            const form = document.getElementById('formEditArsip');
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            if (!currentEditId) {
+                alert('ID data tidak ditemukan');
+                return;
+            }
+
+            const formData = new FormData(form);
+
+            const data = {
+                no_arsip: formData.get('no_arsip')?.trim(),
+                kode_klasifikasi: formData.get('kode_klasifikasi')?.trim(),
+                uraian_informasi: formData.get('uraian_informasi')?.trim(),
+                tanggal: formData.get('tanggal'),
+                jumlah: parseFloat(formData.get('jumlah')) || 0,
+                satuan: formData.get('satuan'),
+                keamanan: formData.get('keamanan'),
+                Keterangan: formData.get('keterangan')?.trim() || ''
+            };
+
+            console.log('Updating arsip:', currentEditId, data);
+
+            try {
+                const response = await fetch(`http://127.0.0.1:8000/api/arsip/${currentEditId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    let errorMsg = result.message || 'Gagal mengupdate data';
+                    if (result.errors) {
+                        errorMsg += '\n\nDetail:\n' + Object.entries(result.errors)
+                            .map(([key, val]) => `${key}: ${val.join(', ')}`)
+                            .join('\n');
+                    }
+                    throw new Error(errorMsg);
+                }
+
+                alert(result.message || 'Data berhasil diupdate!');
+                modalEdit.hide();
+                form.reset();
+                currentEditId = null;
+                arsipTable.ajax.reload();
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Gagal mengupdate data:\n' + error.message);
+            }
+        }
+
         async function hapusArsip(id) {
             if (!confirm('Apakah Anda yakin ingin menghapus data ini?')) return;
 
@@ -1013,11 +1159,6 @@
             }
         }
 
-        function editArsip(id) {
-            alert('Fitur edit sedang dalam pengembangan');
-        }
-
-        // Tambah Data
         function tambahData() {
             modalTambah.show();
             if (kodeKlasifikasi.length === 0) {
@@ -1174,7 +1315,6 @@
             itemCounter = items.length;
         }
 
-        // Simpan Data
         async function simpanData() {
             const form = document.getElementById('formTambahArsip');
             if (!form.checkValidity()) {
@@ -1199,167 +1339,168 @@
             const keterangan = formData.getAll('keterangan[]');
 
             if (kodeKlasifikasiArray.length === 0) {
-                alert('Minimal harus ada 1 item arsip!');
+            alert('Minimal harus ada 1 item arsip!');
+            return;
+        }
+
+        for (let i = 0; i < kodeKlasifikasiArray.length; i++) {
+            const kodeValue = kodeKlasifikasiArray[i];
+            if (!kodeValue) {
+                alert(`Item ${i + 1}: Kode klasifikasi harus dipilih!`);
                 return;
             }
 
-            for (let i = 0; i < kodeKlasifikasiArray.length; i++) {
-                const kodeValue = kodeKlasifikasiArray[i];
-                if (!kodeValue) {
-                    alert(`Item ${i + 1}: Kode klasifikasi harus dipilih!`);
-                    return;
-                }
+            const [kode, detail] = kodeValue.split('|');
 
-                const [kode, detail] = kodeValue.split('|');
-
-                data.items.push({
-                    no_item: (i + 1).toString(),
-                    kode: kode.trim(),
-                    detail_klasifikasi: detail.trim(),
-                    tanggal: tanggal[i],
-                    jumlah_angka: parseInt(jumlahAngka[i]),
-                    satuan_jumlah: jumlah[i],
-                    jumlah_lengkap: jumlahAngka[i] + ' ' + jumlah[i],
-                    klasifikasi_keamanan: klasifikasiKeamanan[i],
-                    uraian: uraian[i].trim(),
-                    keterangan: keterangan[i].trim()
-                });
-            }
-
-            try {
-                const response = await fetch('http://127.0.0.1:8000/api/arsip/store', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify(data)
-                });
-
-                const result = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(result.message || 'Gagal menyimpan data');
-                }
-
-                alert(result.message || 'Data berhasil disimpan!');
-                modalTambah.hide();
-                form.reset();
-
-                const container = document.getElementById('itemArsipContainer');
-                container.innerHTML = '';
-                itemCounter = 0;
-
-                arsipTable.ajax.reload();
-
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Gagal menyimpan data: ' + error.message);
-            }
+            data.items.push({
+                no_item: (i + 1).toString(),
+                kode: kode.trim(),
+                detail_klasifikasi: detail.trim(),
+                tanggal: tanggal[i],
+                jumlah_angka: parseInt(jumlahAngka[i]),
+                satuan_jumlah: jumlah[i],
+                jumlah_lengkap: jumlahAngka[i] + ' ' + jumlah[i],
+                klasifikasi_keamanan: klasifikasiKeamanan[i],
+                uraian: uraian[i].trim(),
+                keterangan: keterangan[i].trim()
+            });
         }
 
-        // ===== EXPORT EXCEL - LANGSUNG DOWNLOAD =====
-        async function exportExcel() {
-            try {
-                const btn = event.target.closest('button');
-                const originalHTML = btn.innerHTML;
-                btn.disabled = true;
-                btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Downloading...';
+        try {
+            const response = await fetch('http://127.0.0.1:8000/api/arsip/store', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
 
-                const response = await fetch('http://127.0.0.1:8000/api/arsip/export/excel', {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                    }
-                });
+            const result = await response.json();
 
-                if (!response.ok) {
-                    throw new Error('Gagal mengunduh file Excel');
-                }
-
-                // Ambil blob dari response
-                const blob = await response.blob();
-
-                // Buat URL untuk blob
-                const url = window.URL.createObjectURL(blob);
-
-                // Buat element anchor untuk download
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `Data_Arsip_${new Date().getTime()}.xlsx`;
-                document.body.appendChild(a);
-                a.click();
-
-                // Cleanup
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
-
-                btn.disabled = false;
-                btn.innerHTML = originalHTML;
-
-            } catch (error) {
-                console.error('Error export Excel:', error);
-                alert('Gagal mengunduh file Excel: ' + error.message);
-                const btn = event.target.closest('button');
-                btn.disabled = false;
-                btn.innerHTML = '<i class="bi bi-file-earmark-excel"></i> Export Excel';
+            if (!response.ok) {
+                throw new Error(result.message || 'Gagal menyimpan data');
             }
+
+            alert(result.message || 'Data berhasil disimpan!');
+            modalTambah.hide();
+            form.reset();
+
+            const container = document.getElementById('itemArsipContainer');
+            container.innerHTML = '';
+            itemCounter = 0;
+
+            arsipTable.ajax.reload();
+
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Gagal menyimpan data: ' + error.message);
         }
+    }
 
-        // ===== EXPORT PDF - LANGSUNG DOWNLOAD =====
-        async function exportPDF() {
-            try {
-                const btn = event.target.closest('button');
-                const originalHTML = btn.innerHTML;
-                btn.disabled = true;
-                btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Downloading...';
+    async function exportExcel() {
+        try {
+            const btn = event.target.closest('button');
+            const originalHTML = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Downloading...';
 
-                const response = await fetch('http://127.0.0.1:8000/api/arsip/export/pdf', {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/pdf'
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error('Gagal mengunduh file PDF');
+            const response = await fetch('http://127.0.0.1:8000/api/arsip/export/excel', {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                 }
+            });
 
-                // Ambil blob dari response
-                const blob = await response.blob();
+            if (!response.ok) throw new Error('Gagal mengunduh file Excel');
 
-                // Buat URL untuk blob
-                const url = window.URL.createObjectURL(blob);
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Data_Arsip_${new Date().getTime()}.xlsx`;
+            document.body.appendChild(a);
+            a.click();
 
-                // Buat element anchor untuk download
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `Data_Arsip_${new Date().getTime()}.pdf`;
-                document.body.appendChild(a);
-                a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
 
-                // Cleanup
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
 
-                btn.disabled = false;
-                btn.innerHTML = originalHTML;
-
-            } catch (error) {
-                console.error('Error export PDF:', error);
-                alert('Gagal mengunduh file PDF: ' + error.message);
-                const btn = event.target.closest('button');
-                btn.disabled = false;
-                btn.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> Export PDF';
-            }
+        } catch (error) {
+            console.error('Error export Excel:', error);
+            alert('Gagal mengunduh file Excel: ' + error.message);
+            const btn = event.target.closest('button');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-file-earmark-excel"></i> Export Excel';
         }
+    }
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
-            modalTambah = new bootstrap.Modal(document.getElementById('modalTambah'));
-            loadKodeKlasifikasi();
+    async function exportPDF() {
+        try {
+            const btn = event.target.closest('button');
+            const originalHTML = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Downloading...';
+
+            const response = await fetch('http://127.0.0.1:8000/api/arsip/export/pdf', {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/pdf'
+                }
+            });
+
+            if (!response.ok) throw new Error('Gagal mengunduh file PDF');
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Data_Arsip_${new Date().getTime()}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
+
+        } catch (error) {
+            console.error('Error export PDF:', error);
+            alert('Gagal mengunduh file PDF: ' + error.message);
+            const btn = event.target.closest('button');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> Export PDF';
+        }
+    }
+
+    // Initialization
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('=== PAGE LOADING ===');
+
+        // Initialize modals
+        modalTambah = new bootstrap.Modal(document.getElementById('modalTambah'));
+        modalGroupAction = new bootstrap.Modal(document.getElementById('modalGroupAction'));
+        modalEdit = new bootstrap.Modal(document.getElementById('modalEdit'));
+        console.log('Modals initialized');
+
+        // Load klasifikasi first
+        loadKodeKlasifikasi().then(() => {
+            console.log('Klasifikasi loaded, initializing DataTable...');
             initDataTable();
         });
+
+        // Handle sidebar
+        const sidebar = document.getElementById('sidebar');
+        const main = document.getElementById('mainContent');
+        if (sidebar && main) {
+            main.classList.toggle('sidebar-collapsed', sidebar.classList.contains('collapsed'));
+        }
+
+        console.log('=== PAGE LOADED ===');
+    });
     </script>
 </body>
 </html>

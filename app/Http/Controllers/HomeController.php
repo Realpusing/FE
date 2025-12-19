@@ -11,4 +11,16 @@ class HomeController extends Controller
     {
         return view('home');
     }
+    public function arsip()
+    {
+        return view('home');
+    }
+    public function klasifikasi()
+    {
+        return view('klasifikasi');
+    }
+    public function dashboard()
+    {
+        return view('dashbord');
+    }
 }
