@@ -19,26 +19,26 @@
             <i class="bi bi-folder2-open"></i>
             <span>Data Arsip</span>
         </a>
-        <a href="/klasifikasi" class="menu-item" data-page="klasifikasi">
+        <a href="" class="menu-item" data-page="klasifikasi">
             <i class="bi bi-tags"></i>
             <span>Klasifikasi</span>
         </a>
-        <a href="/laporan" class="menu-item" data-page="laporan">
+        <a href="" class="menu-item" data-page="laporan">
             <i class="bi bi-file-earmark-bar-graph"></i>
             <span>Laporan</span>
         </a>
 
         <div class="menu-separator"></div>
 
-        <a href="/pengaturan" class="menu-item" data-page="pengaturan">
+        <a href="" class="menu-item" data-page="pengaturan">
             <i class="bi bi-gear"></i>
             <span>Pengaturan</span>
         </a>
-        <a href="/bantuan" class="menu-item" data-page="bantuan">
+        <a href="" class="menu-item" data-page="bantuan">
             <i class="bi bi-question-circle"></i>
             <span>Bantuan</span>
         </a>
-        <a href="/logout" class="menu-item text-danger" data-page="logout">
+        <a href="" class="menu-item text-danger" data-page="logout">
             <i class="bi bi-box-arrow-right"></i>
             <span>Keluar</span>
         </a>

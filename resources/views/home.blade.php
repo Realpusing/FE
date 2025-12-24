@@ -15,6 +15,16 @@
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
+    <!-- SweetAlert2 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.5/dist/sweetalert2.min.css">
+
+    <!-- SheetJS for Excel Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <!-- jsPDF for PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
     <style>
         body {
             background: linear-gradient(135deg, #f0f4f8 0%, #fff3e0 100%);
@@ -233,7 +243,6 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
 
-        /* Styling untuk row yang di-group */
         .grouped-row td {
             border-top: none !important;
         }
@@ -317,11 +326,6 @@
             transform: scale(1.02);
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
         @media (max-width: 768px) {
             .main-content {
                 margin-left: 70px;
@@ -331,12 +335,32 @@
                 margin-left: 0;
             }
         }
+
+        /* SweetAlert2 Custom Styling */
+        .swal2-popup {
+            border-radius: 1rem !important;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+        }
+
+        .swal2-title {
+            font-weight: 700 !important;
+        }
+
+        .swal2-confirm {
+            border-radius: 2rem !important;
+            padding: 0.75rem 2rem !important;
+            font-weight: 600 !important;
+        }
+
+        .swal2-cancel {
+            border-radius: 2rem !important;
+            padding: 0.75rem 2rem !important;
+            font-weight: 600 !important;
+        }
     </style>
 </head>
 <body>
-    {{-- Sertakan sidebar agar elemen dengan id="sidebar" ada untuk skrip --}}
-    @include('sidebar')
-
+@include('sidebar')
     <div class="main-content" id="mainContent">
         <div class="container-fluid">
             <div class="header-section text-center shadow-sm">
@@ -394,6 +418,7 @@
         </div>
     </div>
 
+    <!-- Modal Tambah/Edit -->
     <div class="modal fade" id="modalTambah" tabindex="-1" aria-labelledby="modalTambahLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content">
@@ -441,7 +466,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="button" class="btn btn-primary" onclick="simpanData()">
+                    <button type="button" class="btn btn-primary" id="btnSimpan" onclick="simpanData()">
                         <i class="bi bi-save"></i> Simpan Data
                     </button>
                 </div>
@@ -449,7 +474,7 @@
         </div>
     </div>
 
-    <!-- Modal untuk Edit/Hapus Group -->
+    <!-- Modal Group Action -->
     <div class="modal fade" id="modalGroupAction" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -473,80 +498,19 @@
         </div>
     </div>
 
-    <!-- Modal Edit Data -->
-    <div class="modal fade" id="modalEdit" tabindex="-1" aria-labelledby="modalEditLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title" id="modalEditLabel">
-                        <i class="bi bi-pencil-square"></i> Edit Data Arsip
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div id="edit_info_berkas" class="alert alert-info mb-3"></div>
-
-                    <form id="formEditArsip">
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label">No Item Arsip <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="edit_no_arsip" name="no_arsip" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Kode Klasifikasi <span class="text-danger">*</span></label>
-                                <select class="form-select" id="edit_kode_klasifikasi" name="kode_klasifikasi" required>
-                                    <option value="">-- Pilih Kode --</option>
-                                </select>
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label">Uraian Informasi <span class="text-danger">*</span></label>
-                                <textarea class="form-control" id="edit_uraian" name="uraian_informasi" rows="3" required></textarea>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Tanggal <span class="text-danger">*</span></label>
-                                <input type="date" class="form-control" id="edit_tanggal" name="tanggal" required>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Jumlah <span class="text-danger">*</span></label>
-                                <input type="number" class="form-control" id="edit_jumlah" name="jumlah" required min="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Satuan <span class="text-danger">*</span></label>
-                                <select class="form-select" id="edit_satuan" name="satuan" required>
-                                    <option value="">-- Pilih --</option>
-                                    <option value="lembar">Lembar</option>
-                                    <option value="berkas">Berkas</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Klasifikasi Keamanan <span class="text-danger">*</span></label>
-                                <select class="form-select" id="edit_keamanan" name="keamanan" required>
-                                    <option value="biasa">Biasa</option>
-                                    <option value="rahasia">Rahasia</option>
-                                    <option value="super-rahasia">Super Rahasia</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Keterangan</label>
-                                <input type="text" class="form-control" id="edit_keterangan" name="keterangan">
-                            </div>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="button" class="btn btn-primary" onclick="updateArsip()">
-                        <i class="bi bi-save"></i> Update Data
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+    <!-- Bootstrap -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- DataTables -->
     <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
     <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.5/dist/sweetalert2.all.min.js"></script>
 
     <script>
         let itemCounter = 0;
@@ -554,10 +518,11 @@
         let arsipTable;
         let modalTambah;
         let modalGroupAction;
-        let modalEdit;
         let currentGroupIds = [];
         let currentEditId = null;
+        let isEditMode = false;
 
+        // Generate No Berkas
         async function generateNoBerkas(kodeKlasifikasi) {
             const noBerkasInput = document.getElementById('no_berkas');
 
@@ -582,10 +547,7 @@
                 if (result.status) {
                     noBerkasInput.value = result.next_number;
                     noBerkasInput.placeholder = result.next_number;
-                } else {
-                    throw new Error(result.message || 'Format response tidak sesuai');
                 }
-
             } catch (error) {
                 console.error('Error generating no berkas:', error);
                 noBerkasInput.value = '1';
@@ -593,6 +555,7 @@
             }
         }
 
+        // Load Kode Klasifikasi
         async function loadKodeKlasifikasi() {
             try {
                 const response = await fetch('http://127.0.0.1:8000/api/klasifikasi', {
@@ -612,29 +575,21 @@
                         kode: item.Kode,
                         detail: item.Detail_kode
                     }));
-
-                    console.log('Kode klasifikasi loaded:', kodeKlasifikasi.length, 'items');
                     updateKlasifikasiDropdown();
-                } else {
-                    throw new Error('Format data tidak sesuai');
                 }
             } catch (error) {
                 console.error('Error loading kode klasifikasi:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal Memuat Data',
+                    text: 'Tidak dapat memuat data klasifikasi',
+                    confirmButtonColor: '#d33'
+                });
             }
         }
 
+        // Update Klasifikasi Dropdown
         function updateKlasifikasiDropdown() {
-            // Update dropdown di form edit
-            const editDropdown = document.getElementById('edit_kode_klasifikasi');
-            if (editDropdown && kodeKlasifikasi.length > 0) {
-                editDropdown.innerHTML = '<option value="">-- Pilih Kode --</option>';
-                kodeKlasifikasi.forEach(item => {
-                    editDropdown.innerHTML += `<option value="${item.kode}">${item.kode} - ${item.detail}</option>`;
-                });
-                console.log('Edit dropdown populated with', kodeKlasifikasi.length, 'options');
-            }
-
-            // Update dropdown di form tambah
             const existingDropdown = document.querySelector('select[name="kode_klasifikasi[]"]');
             if (existingDropdown) {
                 existingDropdown.innerHTML = '<option value="">-- Pilih Kode Klasifikasi --</option>';
@@ -652,25 +607,28 @@
             }
         }
 
+        // Initialize DataTable
         function initDataTable() {
             arsipTable = $('#arsipTable').DataTable({
                 ajax: {
                     url: 'http://127.0.0.1:8000/api/berkas',
                     type: 'GET',
                     dataSrc: function(json) {
-                        console.log('DataTable loaded:', json);
                         if (json.data) {
                             return json.data;
                         } else if (Array.isArray(json)) {
                             return json;
-                        } else {
-                            console.error('Format data tidak dikenali:', json);
-                            return [];
                         }
+                        return [];
                     },
                     error: function(xhr, error, thrown) {
                         console.error('Error loading data:', error, thrown);
-                        alert('Gagal memuat data: ' + error);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal Memuat Data',
+                            text: 'Tidak dapat memuat data dari server',
+                            confirmButtonColor: '#d33'
+                        });
                     }
                 },
                 columns: [
@@ -756,7 +714,7 @@
                         }
                     },
                     {
-                        data: 'Keterangan',
+                        data: 'keterangan',
                         defaultContent: '-'
                     },
                     {
@@ -877,6 +835,7 @@
             });
         }
 
+        // Show Group Action
         function showGroupAction(ids, nomor, judul) {
             currentGroupIds = ids;
             const infoHtml = `
@@ -888,64 +847,23 @@
             modalGroupAction.show();
         }
 
-        async function editGroup() {
-            alert(`Fitur edit untuk ${currentGroupIds.length} data sedang dalam pengembangan.\nID: ${currentGroupIds.join(', ')}`);
-            modalGroupAction.hide();
-        }
-
-        async function hapusGroup() {
-            if (!confirm(`Apakah Anda yakin ingin menghapus ${currentGroupIds.length} data sekaligus?`)) return;
-
-            try {
-                let successCount = 0;
-                let failCount = 0;
-
-                for (const id of currentGroupIds) {
-                    try {
-                        const response = await fetch(`http://127.0.0.1:8000/api/arsip/${id}`, {
-                            method: 'DELETE',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            }
-                        });
-
-                        if (response.ok) {
-                            successCount++;
-                        } else {
-                            failCount++;
-                        }
-                    } catch (error) {
-                        failCount++;
-                        console.error(`Error deleting ID ${id}:`, error);
-                    }
-                }
-
-                modalGroupAction.hide();
-                alert(`Berhasil menghapus ${successCount} data.\n${failCount > 0 ? `Gagal: ${failCount} data.` : ''}`);
-                arsipTable.ajax.reload();
-
-            } catch (error) {
-                console.error('Error deleting group:', error);
-                alert('Terjadi kesalahan saat menghapus data');
-            }
-        }
-
+        // Edit Arsip
         async function editArsip(id) {
-            console.log('=== EDIT ARSIP CALLED ===');
-            console.log('ID:', id);
-            console.log('Kode Klasifikasi available:', kodeKlasifikasi.length);
-
-            // Pastikan klasifikasi sudah di-load
             if (kodeKlasifikasi.length === 0) {
-                console.log('Loading klasifikasi first...');
                 await loadKodeKlasifikasi();
             }
 
             try {
-                currentEditId = id;
-                const url = `http://127.0.0.1:8000/api/arsip/${id}`;
-                console.log('Fetching from:', url);
+                Swal.fire({
+                    title: 'Memuat Data...',
+                    html: 'Mohon tunggu sebentar',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
 
+                const url = `http://127.0.0.1:8000/api/arsip/${id}`;
                 const response = await fetch(url, {
                     method: 'GET',
                     headers: {
@@ -954,213 +872,328 @@
                     }
                 });
 
-                console.log('Response status:', response.status);
-                console.log('Response ok:', response.ok);
-
                 if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('Response error text:', errorText);
-                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                    throw new Error(`HTTP ${response.status}`);
                 }
 
                 const result = await response.json();
-                console.log('API Response:', JSON.stringify(result, null, 2));
 
                 if (!result.data) {
-                    throw new Error('Property "data" tidak ada dalam response');
+                    throw new Error('Data tidak ditemukan');
                 }
 
-                const data = result.data;
+                const firstData = result.data;
+                const idHal = firstData.id_hal;
 
-                // Populate semua field dengan console log
-                console.log('Populating form...');
-
-                const fields = {
-                    'edit_no_arsip': data.no_arsip || '',
-                    'edit_uraian': data.uraian_informasi || '',
-                    'edit_tanggal': data.tanggal || '',
-                    'edit_jumlah': data.jumlah || '',
-                    'edit_satuan': data.satuan || '',
-                    'edit_keterangan': data.Keterangan || ''
-                };
-
-                // Set semua field
-                for (const [fieldId, value] of Object.entries(fields)) {
-                    const element = document.getElementById(fieldId);
-                    if (element) {
-                        element.value = value;
-                        console.log(`✓ ${fieldId} = "${value}"`);
-                    } else {
-                        console.error(`✗ Element ${fieldId} tidak ditemukan!`);
+                const allDataResponse = await fetch('http://127.0.0.1:8000/api/berkas', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
                     }
+                });
+
+                if (!allDataResponse.ok) {
+                    throw new Error('Gagal mengambil data berkas lengkap');
                 }
 
-                // Handle kode klasifikasi
-                let kodeValue = '';
-                if (data.kode && data.kode.Kode) {
-                    kodeValue = data.kode.Kode;
-                } else if (data.kode_klasifikasi) {
-                    kodeValue = data.kode_klasifikasi;
-                }
+                const allDataResult = await allDataResponse.json();
+                const groupData = allDataResult.data.filter(item => item.id_hal === idHal);
 
-                const kodeDropdown = document.getElementById('edit_kode_klasifikasi');
-                if (kodeDropdown) {
-                    console.log('Kode value:', kodeValue);
-                    console.log('Dropdown has', kodeDropdown.options.length, 'options');
+                currentGroupIds = groupData.map(item => item.id);
+                currentEditId = null;
+                isEditMode = true;
 
-                    // Cek apakah value ada di dropdown
-                    let found = false;
-                    for (let i = 0; i < kodeDropdown.options.length; i++) {
-                        if (kodeDropdown.options[i].value === kodeValue) {
-                            found = true;
-                            console.log(`Found kode at index ${i}`);
-                            break;
+                document.getElementById('modalTambahLabel').innerHTML = '<i class="bi bi-pencil-square"></i> Edit Data Arsip';
+                document.getElementById('judul_berkas').value = firstData.hal?.judul_berkas || '';
+                document.getElementById('no_berkas').value = firstData.hal?.nomor || '';
+
+                const container = document.getElementById('itemArsipContainer');
+                container.innerHTML = '';
+                itemCounter = 0;
+
+                groupData.forEach((data, index) => {
+                    itemCounter = index + 1;
+                    const isFirstItem = index === 0;
+                    const itemHTML = getItemArsipHTML(itemCounter, !isFirstItem);
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = itemHTML;
+                    container.appendChild(tempDiv.firstElementChild);
+                });
+
+                setTimeout(() => {
+                    const items = document.querySelectorAll('.item-arsip-container');
+
+                    items.forEach((item, index) => {
+                        const data = groupData[index];
+
+                        if (index === 0) {
+                            const noItemInput = document.getElementById('no_item_master');
+                            if (noItemInput) noItemInput.value = data.no_arsip || '';
+
+                            const kodeSelect = document.getElementById('kode_klasifikasi_master');
+                            if (kodeSelect && data.kode) {
+                                const kodeValue = data.kode.Kode || '';
+                                const detailValue = data.kode.Detail_kode || '';
+                                const combinedValue = `${kodeValue}|${detailValue}`;
+                                kodeSelect.value = combinedValue;
+
+                                if (kodeValue) {
+                                    generateNoBerkas(kodeValue);
+                                }
+                            }
                         }
-                    }
 
-                    if (found) {
-                        kodeDropdown.value = kodeValue;
-                        console.log('✓ Kode klasifikasi set to:', kodeDropdown.value);
-                    } else {
-                        console.error('✗ Kode', kodeValue, 'tidak ada di dropdown!');
-                    }
-                } else {
-                    console.error('✗ Dropdown edit_kode_klasifikasi tidak ditemukan!');
+                        const tanggalInput = item.querySelector('input[name="tanggal[]"]');
+                        if (tanggalInput) tanggalInput.value = data.tanggal || '';
+
+                        const jumlahInput = item.querySelector('input[name="jumlah_angka[]"]');
+                        if (jumlahInput) jumlahInput.value = data.jumlah || '';
+
+                        const satuanSelect = item.querySelector('select[name="jumlah[]"]');
+                        if (satuanSelect) satuanSelect.value = (data.satuan || '').toLowerCase();
+
+                        const keamananSelect = item.querySelector('select[name="klasifikasi_keamanan[]"]');
+                        if (keamananSelect) {
+                            const keamananValue = (data.keamanan || 'biasa').toLowerCase().replace(/\s+/g, '-');
+                            keamananSelect.value = keamananValue;
+                        }
+
+                        const uraianTextarea = item.querySelector('textarea[name="uraian[]"]');
+                        if (uraianTextarea) uraianTextarea.value = data.uraian_informasi || '';
+
+                        const keteranganInput = item.querySelector('input[name="keterangan[]"]');
+                        if (keteranganInput) keteranganInput.value = data.keterangan || '';
+                    });
+
+                    updateAllNoItem();
+                    updateAllKodeKlasifikasi();
+                }, 150);
+
+                const saveButton = document.getElementById('btnSimpan');
+                if (saveButton) {
+                    saveButton.innerHTML = '<i class="bi bi-save"></i> Update Data';
+                    saveButton.onclick = function() { updateArsipFromModal(); };
                 }
 
-                // Handle keamanan
-                let keamananValue = (data.keamanan || 'biasa').toLowerCase().replace(' ', '-');
-                const keamananDropdown = document.getElementById('edit_keamanan');
-                if (keamananDropdown) {
-                    keamananDropdown.value = keamananValue;
-                    console.log('✓ Keamanan set to:', keamananDropdown.value);
-                }
-
-                // Show berkas info
-                const berkasInfoDiv = document.getElementById('edit_info_berkas');
-                if (berkasInfoDiv) {
-                    const berkasInfo = `
-                        <strong>No Berkas:</strong> ${data.hal?.nomor || '-'}<br>
-                        <strong>Judul:</strong> ${data.hal?.judul_berkas || '-'}
-                    `;
-                    berkasInfoDiv.innerHTML = berkasInfo;
-                    console.log('✓ Berkas info updated');
-                }
-
-                console.log('All fields populated, showing modal...');
-
-                // Pastikan modal element ada
-                const modalElement = document.getElementById('modalEdit');
-                if (!modalElement) {
-                    throw new Error('Modal element "modalEdit" tidak ditemukan!');
-                }
-
-                // Show modal
-                if (modalEdit) {
-                    modalEdit.show();
-                    console.log('✓ Modal shown');
-                } else {
-                    console.error('Modal instance tidak ada, creating new one...');
-                    modalEdit = new bootstrap.Modal(modalElement);
-                    modalEdit.show();
-                }
-
-                console.log('=== EDIT ARSIP COMPLETE ===');
+                Swal.close();
+                modalTambah.show();
 
             } catch (error) {
-                console.error('=== ERROR IN EDIT ARSIP ===');
-                console.error('Error name:', error.name);
-                console.error('Error message:', error.message);
-                console.error('Error stack:', error.stack);
-                alert('Gagal memuat data:\n\n' + error.message + '\n\nCek console (F12) untuk detail lengkap.');
+                console.error('Error in edit arsip:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal Memuat Data',
+                    text: error.message,
+                    confirmButtonColor: '#d33'
+                });
             }
         }
 
-        async function updateArsip() {
-            const form = document.getElementById('formEditArsip');
+        // Update Arsip From Modal
+        async function updateArsipFromModal() {
+            const form = document.getElementById('formTambahArsip');
             if (!form.checkValidity()) {
                 form.reportValidity();
                 return;
             }
 
-            if (!currentEditId) {
-                alert('ID data tidak ditemukan');
+            const isGroupEdit = currentGroupIds && currentGroupIds.length > 0;
+
+            if (!isGroupEdit && !currentEditId) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'ID data tidak ditemukan',
+                    confirmButtonColor: '#d33'
+                });
                 return;
             }
 
+            const result = await Swal.fire({
+                title: 'Konfirmasi Update',
+                text: `Anda akan mengupdate ${isGroupEdit ? currentGroupIds.length : 1} data. Lanjutkan?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Ya, Update!',
+                cancelButtonText: 'Batal'
+            });
+
+            if (!result.isConfirmed) return;
+
+            Swal.fire({
+                title: 'Mengupdate Data...',
+                html: 'Mohon tunggu sebentar',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
             const formData = new FormData(form);
+            const kodeKlasifikasiArray = formData.getAll('kode_klasifikasi[]');
+            const tanggal = formData.getAll('tanggal[]');
+            const jumlahAngka = formData.getAll('jumlah_angka[]');
+            const jumlah = formData.getAll('jumlah[]');
+            const klasifikasiKeamanan = formData.getAll('klasifikasi_keamanan[]');
+            const uraian = formData.getAll('uraian[]');
+            const keterangan = formData.getAll('keterangan[]');
 
-            const data = {
-                no_arsip: formData.get('no_arsip')?.trim(),
-                kode_klasifikasi: formData.get('kode_klasifikasi')?.trim(),
-                uraian_informasi: formData.get('uraian_informasi')?.trim(),
-                tanggal: formData.get('tanggal'),
-                jumlah: parseFloat(formData.get('jumlah')) || 0,
-                satuan: formData.get('satuan'),
-                keamanan: formData.get('keamanan'),
-                Keterangan: formData.get('keterangan')?.trim() || ''
-            };
+            if (kodeKlasifikasiArray.length === 0 || !kodeKlasifikasiArray[0]) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Kode klasifikasi harus dipilih!',
+                    confirmButtonColor: '#d33'
+                });
+                return;
+            }
 
-            console.log('Updating arsip:', currentEditId, data);
+            const [kode, detail] = kodeKlasifikasiArray[0].split('|');
 
             try {
-                const response = await fetch(`http://127.0.0.1:8000/api/arsip/${currentEditId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify(data)
-                });
+                let successCount = 0;
+                let failCount = 0;
+                const errors = [];
 
-                const result = await response.json();
+                if (isGroupEdit) {
+                    for (let i = 0; i < currentGroupIds.length; i++) {
+                        const itemId = currentGroupIds[i];
 
-                if (!response.ok) {
-                    let errorMsg = result.message || 'Gagal mengupdate data';
-                    if (result.errors) {
-                        errorMsg += '\n\nDetail:\n' + Object.entries(result.errors)
-                            .map(([key, val]) => `${key}: ${val.join(', ')}`)
-                            .join('\n');
+                        const itemData = {
+                            no_arsip: formData.get('no_berkas')?.trim(),
+                            kode_klasifikasi: kode.trim(),
+                            uraian_informasi: uraian[i]?.trim(),
+                            tanggal: tanggal[i],
+                            jumlah: parseFloat(jumlahAngka[i]) || 0,
+                            satuan: jumlah[i],
+                            keamanan: klasifikasiKeamanan[i],
+                            keterangan: keterangan[i]?.trim() || ''
+                        };
+
+                        try {
+                            const response = await fetch(`http://127.0.0.1:8000/api/arsip/${itemId}`, {
+                                method: 'PUT',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Accept': 'application/json'
+                                },
+                                body: JSON.stringify(itemData)
+                            });
+
+                            const result = await response.json();
+
+                            if (response.ok) {
+                                successCount++;
+                            } else {
+                                failCount++;
+                                errors.push(`Item ${i + 1}: ${result.message || 'Unknown error'}`);
+                            }
+                        } catch (error) {
+                            failCount++;
+                            errors.push(`Item ${i + 1}: ${error.message}`);
+                        }
                     }
-                    throw new Error(errorMsg);
+
+                    if (failCount === 0) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil!',
+                            text: `${successCount} data berhasil diupdate`,
+                            confirmButtonColor: '#28a745'
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Update Selesai dengan Error',
+                            html: `<p>Berhasil: ${successCount} item</p><p>Gagal: ${failCount} item</p><p>Detail: ${errors.join('<br>')}</p>`,
+                            confirmButtonColor: '#ffc107'
+                        });
+                    }
+                } else {
+                    const data = {
+                        no_arsip: formData.get('no_berkas')?.trim(),
+                        kode_klasifikasi: kode.trim(),
+                        uraian_informasi: uraian[0]?.trim(),
+                        tanggal: tanggal[0],
+                        jumlah: parseFloat(jumlahAngka[0]) || 0,
+                        satuan: jumlah[0],
+                        keamanan: klasifikasiKeamanan[0],
+                        keterangan: keterangan[0]?.trim() || ''
+                    };
+
+                    const response = await fetch(`http://127.0.0.1:8000/api/arsip/${currentEditId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    });
+
+                    const result = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(result.message || 'Gagal mengupdate data');
+                    }
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil!',
+                        text: 'Data berhasil diupdate',
+                        confirmButtonColor: '#28a745'
+                    });
                 }
 
-                alert(result.message || 'Data berhasil diupdate!');
-                modalEdit.hide();
+                resetModalTambah();
+                modalTambah.hide();
                 form.reset();
                 currentEditId = null;
+                currentGroupIds = [];
+                isEditMode = false;
                 arsipTable.ajax.reload();
 
             } catch (error) {
                 console.error('Error:', error);
-                alert('Gagal mengupdate data:\n' + error.message);
-            }
-        }
-
-        async function hapusArsip(id) {
-            if (!confirm('Apakah Anda yakin ingin menghapus data ini?')) return;
-
-            try {
-                const response = await fetch(`http://127.0.0.1:8000/api/arsip/${id}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal Update',
+                    text: error.message,
+                    confirmButtonColor: '#d33'
                 });
-
-                if (!response.ok) throw new Error('Gagal menghapus data');
-
-                const result = await response.json();
-                alert(result.message || 'Data berhasil dihapus!');
-                arsipTable.ajax.reload();
-            } catch (error) {
-                console.error('Error deleting arsip:', error);
-                alert('Gagal menghapus data: ' + error.message);
             }
         }
 
+        // Reset Modal Tambah
+        function resetModalTambah() {
+            document.getElementById('modalTambahLabel').innerHTML = '<i class="bi bi-plus-circle"></i> Tambah Data Arsip';
+
+            const saveButton = document.getElementById('btnSimpan');
+            if (saveButton) {
+                saveButton.innerHTML = '<i class="bi bi-save"></i> Simpan Data';
+                saveButton.onclick = function() { simpanData(); };
+            }
+
+            currentEditId = null;
+            currentGroupIds = [];
+            isEditMode = false;
+
+            const form = document.getElementById('formTambahArsip');
+            if (form) form.reset();
+
+            const container = document.getElementById('itemArsipContainer');
+            if (container) container.innerHTML = '';
+
+            itemCounter = 0;
+        }
+
+        // Tambah Data
         function tambahData() {
+            resetModalTambah();
             modalTambah.show();
+
             if (kodeKlasifikasi.length === 0) {
                 loadKodeKlasifikasi();
             } else {
@@ -1172,6 +1205,170 @@
             itemCounter = 1;
         }
 
+        // Edit Group
+        async function editGroup() {
+            if (!currentGroupIds || currentGroupIds.length === 0) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Tidak ada data group yang dipilih',
+                    confirmButtonColor: '#d33'
+                });
+                return;
+            }
+
+            modalGroupAction.hide();
+            await editArsip(currentGroupIds[0]);
+        }
+
+        // Hapus Group
+        async function hapusGroup() {
+            if (!currentGroupIds || currentGroupIds.length === 0) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Tidak ada data group yang dipilih',
+                    confirmButtonColor: '#d33'
+                });
+                return;
+            }
+
+            const result = await Swal.fire({
+                title: 'Konfirmasi Hapus',
+                text: `Anda akan menghapus ${currentGroupIds.length} data. Tindakan ini tidak dapat dibatalkan!`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Ya, Hapus!',
+                cancelButtonText: 'Batal'
+            });
+
+            if (!result.isConfirmed) return;
+
+            modalGroupAction.hide();
+
+            Swal.fire({
+                title: 'Menghapus Data...',
+                html: 'Mohon tunggu sebentar',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            try {
+                let successCount = 0;
+                let failCount = 0;
+
+                for (const id of currentGroupIds) {
+                    try {
+                        const response = await fetch(`http://127.0.0.1:8000/api/arsip/${id}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json'
+                            }
+                        });
+
+                        if (response.ok) {
+                            successCount++;
+                        } else {
+                            failCount++;
+                        }
+                    } catch (error) {
+                        failCount++;
+                    }
+                }
+
+                if (failCount === 0) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil!',
+                        text: `${successCount} data berhasil dihapus`,
+                        confirmButtonColor: '#28a745'
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Hapus Selesai dengan Error',
+                        text: `Berhasil: ${successCount}, Gagal: ${failCount}`,
+                        confirmButtonColor: '#ffc107'
+                    });
+                }
+
+                currentGroupIds = [];
+                arsipTable.ajax.reload();
+
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal Hapus',
+                    text: error.message,
+                    confirmButtonColor: '#d33'
+                });
+            }
+        }
+
+        // Hapus Arsip Single
+        async function hapusArsip(id) {
+            const result = await Swal.fire({
+                title: 'Konfirmasi Hapus',
+                text: 'Anda yakin ingin menghapus data ini?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Ya, Hapus!',
+                cancelButtonText: 'Batal'
+            });
+
+            if (!result.isConfirmed) return;
+
+            Swal.fire({
+                title: 'Menghapus Data...',
+                html: 'Mohon tunggu sebentar',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            try {
+                const response = await fetch(`http://127.0.0.1:8000/api/arsip/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    }
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.message || 'Gagal menghapus data');
+                }
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: 'Data berhasil dihapus',
+                    confirmButtonColor: '#28a745'
+                });
+
+                arsipTable.ajax.reload();
+
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal Hapus',
+                    text: error.message,
+                    confirmButtonColor: '#d33'
+                });
+            }
+        }
+
+        // Get Item Arsip HTML
         function getItemArsipHTML(itemNumber, showRemoveBtn = true) {
             const isFirstItem = itemNumber === 1;
 
@@ -1262,6 +1459,7 @@
             `;
         }
 
+        // Update All No Item
         function updateAllNoItem() {
             const masterValue = document.getElementById('no_item_master').value;
             const hiddenInputs = document.querySelectorAll('.hidden-no-item');
@@ -1271,6 +1469,7 @@
             displaySpans.forEach(span => span.textContent = masterValue || '-');
         }
 
+        // Update All Kode Klasifikasi
         function updateAllKodeKlasifikasi() {
             const masterSelect = document.getElementById('kode_klasifikasi_master');
             const masterValue = masterSelect.value;
@@ -1282,6 +1481,7 @@
             displaySpans.forEach(span => span.textContent = masterText || '-');
         }
 
+        // Handle Kode Change
         function handleKodeChange() {
             const masterSelect = document.getElementById('kode_klasifikasi_master');
             if (masterSelect && masterSelect.value) {
@@ -1290,6 +1490,7 @@
             }
         }
 
+        // Tambah Item Arsip
         function tambahItemArsip() {
             itemCounter++;
             const container = document.getElementById('itemArsipContainer');
@@ -1301,6 +1502,7 @@
             updateAllKodeKlasifikasi();
         }
 
+        // Hapus Item Arsip
         function hapusItemArsip(button) {
             const itemContainer = button.closest('.item-arsip-container');
             itemContainer.remove();
@@ -1315,12 +1517,35 @@
             itemCounter = items.length;
         }
 
+        // Simpan Data
         async function simpanData() {
             const form = document.getElementById('formTambahArsip');
             if (!form.checkValidity()) {
                 form.reportValidity();
                 return;
             }
+
+            const result = await Swal.fire({
+                title: 'Konfirmasi Simpan',
+                text: 'Anda yakin ingin menyimpan data ini?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Ya, Simpan!',
+                cancelButtonText: 'Batal'
+            });
+
+            if (!result.isConfirmed) return;
+
+            Swal.fire({
+                title: 'Menyimpan Data...',
+                html: 'Mohon tunggu sebentar',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
 
             const formData = new FormData(form);
 
@@ -1339,168 +1564,368 @@
             const keterangan = formData.getAll('keterangan[]');
 
             if (kodeKlasifikasiArray.length === 0) {
-            alert('Minimal harus ada 1 item arsip!');
-            return;
-        }
-
-        for (let i = 0; i < kodeKlasifikasiArray.length; i++) {
-            const kodeValue = kodeKlasifikasiArray[i];
-            if (!kodeValue) {
-                alert(`Item ${i + 1}: Kode klasifikasi harus dipilih!`);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Minimal harus ada 1 item arsip!',
+                    confirmButtonColor: '#d33'
+                });
                 return;
             }
 
-            const [kode, detail] = kodeValue.split('|');
+            for (let i = 0; i < kodeKlasifikasiArray.length; i++) {
+                const kodeValue = kodeKlasifikasiArray[i];
+                if (!kodeValue) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: `Item ${i + 1}: Kode klasifikasi harus dipilih!`,
+                        confirmButtonColor: '#d33'
+                    });
+                    return;
+                }
 
-            data.items.push({
-                no_item: (i + 1).toString(),
-                kode: kode.trim(),
-                detail_klasifikasi: detail.trim(),
-                tanggal: tanggal[i],
-                jumlah_angka: parseInt(jumlahAngka[i]),
-                satuan_jumlah: jumlah[i],
-                jumlah_lengkap: jumlahAngka[i] + ' ' + jumlah[i],
-                klasifikasi_keamanan: klasifikasiKeamanan[i],
-                uraian: uraian[i].trim(),
-                keterangan: keterangan[i].trim()
-            });
-        }
+                const [kode, detail] = kodeValue.split('|');
 
-        try {
-            const response = await fetch('http://127.0.0.1:8000/api/arsip/store', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify(data)
-            });
-
-            const result = await response.json();
-
-            if (!response.ok) {
-                throw new Error(result.message || 'Gagal menyimpan data');
+                data.items.push({
+                    no_item: (i + 1).toString(),
+                    kode: kode.trim(),
+                    detail_klasifikasi: detail.trim(),
+                    tanggal: tanggal[i],
+                    jumlah_angka: parseInt(jumlahAngka[i]),
+                    satuan_jumlah: jumlah[i],
+                    jumlah_lengkap: jumlahAngka[i] + ' ' + jumlah[i],
+                    klasifikasi_keamanan: klasifikasiKeamanan[i],
+                    uraian: uraian[i].trim(),
+                    keterangan: keterangan[i].trim()
+                });
             }
 
-            alert(result.message || 'Data berhasil disimpan!');
-            modalTambah.hide();
-            form.reset();
+            try {
+                const response = await fetch('http://127.0.0.1:8000/api/arsip/store', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
 
-            const container = document.getElementById('itemArsipContainer');
-            container.innerHTML = '';
-            itemCounter = 0;
+                const result = await response.json();
 
-            arsipTable.ajax.reload();
-
-        } catch (error) {
-            console.error('Error:', error);
-            alert('Gagal menyimpan data: ' + error.message);
-        }
-    }
-
-    async function exportExcel() {
-        try {
-            const btn = event.target.closest('button');
-            const originalHTML = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Downloading...';
-
-            const response = await fetch('http://127.0.0.1:8000/api/arsip/export/excel', {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                if (!response.ok) {
+                    throw new Error(result.message || 'Gagal menyimpan data');
                 }
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: result.message || 'Data berhasil disimpan!',
+                    confirmButtonColor: '#28a745'
+                });
+
+                modalTambah.hide();
+                form.reset();
+
+                const container = document.getElementById('itemArsipContainer');
+                container.innerHTML = '';
+                itemCounter = 0;
+
+                arsipTable.ajax.reload();
+
+            } catch (error) {
+                console.error('Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal Menyimpan',
+                    text: error.message,
+                    confirmButtonColor: '#d33'
+                });
+            }
+        }
+
+        // Export Excel
+        async function exportExcel() {
+            try {
+                Swal.fire({
+                    title: 'Memproses Export Excel...',
+                    html: 'Mohon tunggu sebentar',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                // Ambil semua data dari tabel
+                const allData = arsipTable.rows().data().toArray();
+
+                if (allData.length === 0) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Tidak Ada Data',
+                        text: 'Tidak ada data untuk diekspor',
+                        confirmButtonColor: '#ffc107'
+                    });
+                    return;
+                }
+
+                // Prepare data untuk Excel
+                const excelData = [];
+
+                // Header
+                excelData.push([
+                    'No',
+                    'No Arsip',
+                    'Judul Berkas',
+                    'Nomor Berkas',
+                    'Kode Klasifikasi',
+                    'Detail Klasifikasi',
+                    'Uraian Informasi',
+                    'Tanggal',
+                    'Jumlah',
+                    'Satuan',
+                    'Keamanan',
+                    'Keterangan'
+                ]);
+
+                // Data rows
+                allData.forEach((data, index) => {
+                    excelData.push([
+                        index + 1,
+                        data.no_arsip || '-',
+                        data.hal?.judul_berkas || '-',
+                        data.hal?.nomor || '-',
+                        data.kode?.Kode || '-',
+                        data.kode?.Detail_kode || '-',
+                        data.uraian_informasi || '-',
+                        data.tanggal ? new Date(data.tanggal).toLocaleDateString('id-ID') : '-',
+                        data.jumlah || '-',
+                        data.satuan || '-',
+                        data.keamanan || '-',
+                        data.keterangan || '-'
+                    ]);
+                });
+
+                // Create workbook
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.aoa_to_sheet(excelData);
+
+                // Set column widths
+                ws['!cols'] = [
+                    { wch: 5 },  // No
+                    { wch: 15 }, // No Arsip
+                    { wch: 30 }, // Judul Berkas
+                    { wch: 15 }, // Nomor Berkas
+                    { wch: 15 }, // Kode Klasifikasi
+                    { wch: 30 }, // Detail Klasifikasi
+                    { wch: 40 }, // Uraian Informasi
+                    { wch: 12 }, // Tanggal
+                    { wch: 10 }, // Jumlah
+                    { wch: 10 }, // Satuan
+                    { wch: 15 }, // Keamanan
+                    { wch: 20 }  // Keterangan
+                ];
+
+                // Add worksheet to workbook
+                XLSX.utils.book_append_sheet(wb, ws, 'Data Arsip');
+
+                // Generate filename
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+                const filename = `Data_Arsip_${timestamp}.xlsx`;
+
+                // Download file
+                XLSX.writeFile(wb, filename);
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: 'File Excel berhasil diunduh',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+
+            } catch (error) {
+                console.error('Error export Excel:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal Export',
+                    text: error.message,
+                    confirmButtonColor: '#d33'
+                });
+            }
+        }
+
+        // Export PDF
+        async function exportPDF() {
+            try {
+                Swal.fire({
+                    title: 'Memproses Export PDF...',
+                    html: 'Mohon tunggu sebentar',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                // Ambil semua data dari tabel
+                const allData = arsipTable.rows().data().toArray();
+
+                if (allData.length === 0) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Tidak Ada Data',
+                        text: 'Tidak ada data untuk diekspor',
+                        confirmButtonColor: '#ffc107'
+                    });
+                    return;
+                }
+
+                // Initialize jsPDF
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF('landscape', 'mm', 'a4');
+
+                // Title
+                doc.setFontSize(16);
+                doc.setFont(undefined, 'bold');
+                doc.text('DATA ARSIP', doc.internal.pageSize.getWidth() / 2, 15, { align: 'center' });
+
+                doc.setFontSize(10);
+                doc.setFont(undefined, 'normal');
+                doc.text('Sistem Manajemen Arsip', doc.internal.pageSize.getWidth() / 2, 22, { align: 'center' });
+                doc.text(`Tanggal Export: ${new Date().toLocaleDateString('id-ID')}`, doc.internal.pageSize.getWidth() / 2, 28, { align: 'center' });
+
+                // Prepare table data
+                const tableData = allData.map((data, index) => [
+                    index + 1,
+                    data.no_arsip || '-',
+                    data.hal?.judul_berkas || '-',
+                    data.hal?.nomor || '-',
+                    data.kode?.Kode || '-',
+                    data.uraian_informasi || '-',
+                    data.tanggal ? new Date(data.tanggal).toLocaleDateString('id-ID') : '-',
+                    `${data.jumlah || '-'} ${data.satuan || ''}`.trim(),
+                    data.keamanan || '-',
+                    data.keterangan || '-'
+                ]);
+
+                // Add table
+                doc.autoTable({
+                    startY: 35,
+                    head: [[
+                        'No',
+                        'No Arsip',
+                        'Judul Berkas',
+                        'No Berkas',
+                        'Kode',
+                        'Uraian',
+                        'Tanggal',
+                        'Jumlah',
+                        'Keamanan',
+                        'Ket'
+                    ]],
+                    body: tableData,
+                    theme: 'grid',
+                    headStyles: {
+                        fillColor: [41, 128, 185],
+                        textColor: 255,
+                        fontStyle: 'bold',
+                        halign: 'center',
+                        fontSize: 8
+                    },
+                    bodyStyles: {
+                        fontSize: 7,
+                        cellPadding: 2
+                    },
+                    columnStyles: {
+                        0: { cellWidth: 10, halign: 'center' },  // No
+                        1: { cellWidth: 20 },  // No Arsip
+                        2: { cellWidth: 40 },  // Judul Berkas
+                        3: { cellWidth: 20 },  // No Berkas
+                        4: { cellWidth: 20 },  // Kode
+                        5: { cellWidth: 50 },  // Uraian
+                        6: { cellWidth: 20, halign: 'center' },  // Tanggal
+                        7: { cellWidth: 20, halign: 'center' },  // Jumlah
+                        8: { cellWidth: 20, halign: 'center' },  // Keamanan
+                        9: { cellWidth: 20 }   // Keterangan
+                    },
+                    margin: { top: 35, left: 10, right: 10 },
+                    didDrawPage: function(data) {
+                        // Footer
+                        const pageCount = doc.internal.getNumberOfPages();
+                        const pageSize = doc.internal.pageSize;
+                        const pageHeight = pageSize.height ? pageSize.height : pageSize.getHeight();
+
+                        doc.setFontSize(8);
+                        doc.text(
+                            `Halaman ${data.pageNumber} dari ${pageCount}`,
+                            pageSize.getWidth() / 2,
+                            pageHeight - 10,
+                            { align: 'center' }
+                        );
+                    }
+                });
+
+                // Generate filename
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+                const filename = `Data_Arsip_${timestamp}.pdf`;
+
+                // Download file
+                doc.save(filename);
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: 'File PDF berhasil diunduh',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+
+            } catch (error) {
+                console.error('Error export PDF:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal Export',
+                    text: error.message,
+                    confirmButtonColor: '#d33'
+                });
+            }
+        }
+
+        // Initialization
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('=== PAGE LOADING ===');
+
+            // Initialize modals
+            modalTambah = new bootstrap.Modal(document.getElementById('modalTambah'));
+            modalGroupAction = new bootstrap.Modal(document.getElementById('modalGroupAction'));
+            console.log('Modals initialized');
+
+            // Load klasifikasi first
+            loadKodeKlasifikasi().then(() => {
+                console.log('Klasifikasi loaded, initializing DataTable...');
+                initDataTable();
             });
 
-            if (!response.ok) throw new Error('Gagal mengunduh file Excel');
+            // Handle sidebar
+            const sidebar = document.getElementById('sidebar');
+            const main = document.getElementById('mainContent');
+            if (sidebar && main) {
+                main.classList.toggle('sidebar-collapsed', sidebar.classList.contains('collapsed'));
+            }
 
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `Data_Arsip_${new Date().getTime()}.xlsx`;
-            document.body.appendChild(a);
-            a.click();
+            console.log('=== PAGE LOADED ===');
 
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-
-            btn.disabled = false;
-            btn.innerHTML = originalHTML;
-
-        } catch (error) {
-            console.error('Error export Excel:', error);
-            alert('Gagal mengunduh file Excel: ' + error.message);
-            const btn = event.target.closest('button');
-            btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-file-earmark-excel"></i> Export Excel';
-        }
-    }
-
-    async function exportPDF() {
-        try {
-            const btn = event.target.closest('button');
-            const originalHTML = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Downloading...';
-
-            const response = await fetch('http://127.0.0.1:8000/api/arsip/export/pdf', {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/pdf'
-                }
+            // Show welcome message
+            Swal.fire({
+                icon: 'info',
+                title: 'Selamat Datang!',
+                text: 'Sistem Manajemen Arsip siap digunakan',
+                timer: 2000,
+                showConfirmButton: false,
+                position: 'top-end',
+                toast: true
             });
-
-            if (!response.ok) throw new Error('Gagal mengunduh file PDF');
-
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `Data_Arsip_${new Date().getTime()}.pdf`;
-            document.body.appendChild(a);
-            a.click();
-
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-
-            btn.disabled = false;
-            btn.innerHTML = originalHTML;
-
-        } catch (error) {
-            console.error('Error export PDF:', error);
-            alert('Gagal mengunduh file PDF: ' + error.message);
-            const btn = event.target.closest('button');
-            btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> Export PDF';
-        }
-    }
-
-    // Initialization
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log('=== PAGE LOADING ===');
-
-        // Initialize modals
-        modalTambah = new bootstrap.Modal(document.getElementById('modalTambah'));
-        modalGroupAction = new bootstrap.Modal(document.getElementById('modalGroupAction'));
-        modalEdit = new bootstrap.Modal(document.getElementById('modalEdit'));
-        console.log('Modals initialized');
-
-        // Load klasifikasi first
-        loadKodeKlasifikasi().then(() => {
-            console.log('Klasifikasi loaded, initializing DataTable...');
-            initDataTable();
         });
-
-        // Handle sidebar
-        const sidebar = document.getElementById('sidebar');
-        const main = document.getElementById('mainContent');
-        if (sidebar && main) {
-            main.classList.toggle('sidebar-collapsed', sidebar.classList.contains('collapsed'));
-        }
-
-        console.log('=== PAGE LOADED ===');
-    });
     </script>
 </body>
 </html>
