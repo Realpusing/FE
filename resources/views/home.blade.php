@@ -1648,111 +1648,158 @@
         async function exportExcel() {
             try {
                 Swal.fire({
-                    title: 'Memproses Export Excel...',
-                    html: 'Mohon tunggu sebentar',
+                    title: 'Memproses Export...',
+                    html: 'Menyusun format kearsipan presisi...',
                     allowOutsideClick: false,
-                    didOpen: () => {
-                        Swal.showLoading();
-                    }
+                    didOpen: () => { Swal.showLoading(); }
                 });
 
-                // Ambil semua data dari tabel
                 const allData = arsipTable.rows().data().toArray();
+                if (allData.length === 0) return;
 
-                if (allData.length === 0) {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Tidak Ada Data',
-                        text: 'Tidak ada data untuk diekspor',
-                        confirmButtonColor: '#ffc107'
-                    });
-                    return;
-                }
+                const wb = XLSX.utils.book_new();
 
-                // Prepare data untuk Excel
-                const excelData = [];
-
-                // Header
-                excelData.push([
-                    'No',
-                    'No Arsip',
-                    'Judul Berkas',
-                    'Nomor Berkas',
-                    'Kode Klasifikasi',
-                    'Detail Klasifikasi',
-                    'Uraian Informasi',
-                    'Tanggal',
-                    'Jumlah',
-                    'Satuan',
-                    'Keamanan',
-                    'Keterangan'
-                ]);
-
-                // Data rows
-                allData.forEach((data, index) => {
-                    excelData.push([
-                        index + 1,
-                        data.no_arsip || '-',
-                        data.hal?.judul_berkas || '-',
-                        data.hal?.nomor || '-',
-                        data.kode?.Kode || '-',
-                        data.kode?.Detail_kode || '-',
-                        data.uraian_informasi || '-',
-                        data.tanggal ? new Date(data.tanggal).toLocaleDateString('id-ID') : '-',
-                        data.jumlah || '-',
-                        data.satuan || '-',
-                        data.keamanan || '-',
-                        data.keterangan || '-'
-                    ]);
+                // 1. PENGELOMPOKKAN DATA BERDASARKAN PREFIX
+                const groupedByPrefix = {};
+                allData.forEach(item => {
+                    const kodeFull = String(item.kode?.Kode || 'LAIN');
+                    const prefix = kodeFull.split('.')[0];
+                    if (!groupedByPrefix[prefix]) groupedByPrefix[prefix] = [];
+                    groupedByPrefix[prefix].push(item);
                 });
 
-                // Create workbook
-                const wb = XLSX.utils.book_new();
-                const ws = XLSX.utils.aoa_to_sheet(excelData);
+                const sortedPrefixes = Object.keys(groupedByPrefix).sort();
 
-                // Set column widths
-                ws['!cols'] = [
-                    { wch: 5 },  // No
-                    { wch: 15 }, // No Arsip
-                    { wch: 30 }, // Judul Berkas
-                    { wch: 15 }, // Nomor Berkas
-                    { wch: 15 }, // Kode Klasifikasi
-                    { wch: 30 }, // Detail Klasifikasi
-                    { wch: 40 }, // Uraian Informasi
-                    { wch: 12 }, // Tanggal
-                    { wch: 10 }, // Jumlah
-                    { wch: 10 }, // Satuan
-                    { wch: 15 }, // Keamanan
-                    { wch: 20 }  // Keterangan
+                // 2. BUAT SHEET PER KATEGORI (DAFTAR ISI BERKAS)
+                sortedPrefixes.forEach(prefix => {
+                    const rows = [
+                        ["DAFTAR ISI BERKAS"],
+                        [""],
+                        ["KANTOR PENCARIAN DAN PERTOLONGAN TARAKAN"],
+                        ["NO", "NO BERKAS", "JUDUL BERKAS", "NO ITEM ARSIP", "KODE KLASIFIKASI", "", "URAIAN INFORMASI ARSIP", "TANGGAL", "JUMLAH", "KET. KLASIFIKASI KEAMANAN DAN AKSES ARSIP", "KETERANGAN"],
+                        ["(1)", "(2)", "(3)", "(4)", "(5)", "(6)", "(7)", "(8)", "(9)", "(10)", "(11)"],
+                        ["", prefix, getCategoryName(prefix), "", "", "", "", "", "", "", ""]
+                    ];
+
+                    const merges = [
+                        { s: { r: 0, c: 0 }, e: { r: 0, c: 10 } }, // Judul
+                        { s: { r: 2, c: 0 }, e: { r: 2, c: 10 } }, // Kantor
+                        { s: { r: 3, c: 4 }, e: { r: 3, c: 5 } }, // Header Kode
+                        { s: { r: 5, c: 1 }, e: { r: 5, c: 10 } } // Baris Pemisah Kategori
+                    ];
+
+                    // Sorting Data agar No Berkas berurutan
+                    const dataSorted = groupedByPrefix[prefix].sort((a, b) => {
+                        const valA = String(a.hal?.nomor || "");
+                        const valB = String(b.hal?.nomor || "");
+                        return valA.localeCompare(valB, undefined, {numeric: true});
+                    });
+
+                    let lastNoBerkas = null;
+                    let berkasCounter = 1;
+
+                    dataSorted.forEach((item) => {
+                        const currentNo = String(item.hal?.nomor || "");
+                        const isNew = currentNo !== lastNoBerkas;
+
+                        rows.push([
+                            isNew ? berkasCounter++ : "",
+                            isNew ? currentNo : "",
+                            isNew ? (item.hal?.judul_berkas || "") : "",
+                            item.no_arsip || "1",
+                            item.kode?.Kode || "",
+                            item.kode?.Detail_kode || "",
+                            item.uraian_informasi || "",
+                            item.tanggal ? new Date(item.tanggal).toLocaleDateString('id-ID') : "-",
+                            `${item.jumlah || '0'} ${item.satuan || ''}`,
+                            item.keamanan || "Biasa",
+                            item.keterangan || "Tekstual"
+                        ]);
+                        lastNoBerkas = currentNo;
+                    });
+
+                    const ws = XLSX.utils.aoa_to_sheet(rows);
+                    ws['!merges'] = merges;
+                    ws['!cols'] = [{wch:5}, {wch:12}, {wch:35}, {wch:15}, {wch:15}, {wch:25}, {wch:50}, {wch:15}, {wch:12}, {wch:25}, {wch:15}];
+                    ws['!ref'] = XLSX.utils.encode_range({s: {c:0, r:0}, e: {c:10, r: rows.length - 1}});
+
+                    XLSX.utils.book_append_sheet(wb, ws, prefix);
+                });
+
+                // 3. BUAT SHEET "DAFTAR BERKAS" (RINGKASAN BERKAS)
+                const summaryRows = [
+                    ["DAFTAR BERKAS"],
+                    ["KANTOR PENCARIAN DAN PERTOLONGAN KELAS B TARAKAN"],
+                    ["KANTOR PENCARIAN DAN PERTOLONGAN TARAKAN"],
+                    ["NO", "NO BERKAS", "KODE KLASIFIKASI", "", "URAIAN INFROMASI BERKAS", "KURUN WAKTU", "JUMLAH", "KETERANGAN", "KET. KLASIFIKASI KEAMANAN DAN AKSES ARSIP"],
+                    ["(1)", "(2)", "(3)", "(4)", "(5)", "(6)", "(7)", "(8)", "(9)"]
                 ];
 
-                // Add worksheet to workbook
-                XLSX.utils.book_append_sheet(wb, ws, 'Data Arsip');
+                const summaryMerges = [
+                    { s: { r: 0, c: 0 }, e: { r: 0, c: 8 } },
+                    { s: { r: 1, c: 0 }, e: { r: 1, c: 8 } },
+                    { s: { r: 2, c: 0 }, e: { r: 2, c: 8 } },
+                    { s: { r: 3, c: 2 }, e: { r: 3, c: 3 } }
+                ];
 
-                // Generate filename
-                const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-                const filename = `Data_Arsip_${timestamp}.xlsx`;
+                sortedPrefixes.forEach(prefix => {
+                    // Pemisah Sub-Kode (Misal: ,PR,PERENCANAAN)
+                    const sepIdx = summaryRows.length;
+                    summaryRows.push(["", prefix, getCategoryName(prefix), "", "", "", "", "", ""]);
+                    summaryMerges.push({ s: { r: sepIdx, c: 1 }, e: { r: sepIdx, c: 8 } });
 
-                // Download file
-                XLSX.writeFile(wb, filename);
+                    // Ambil berkas unik saja untuk ringkasan
+                    const prefixData = groupedByPrefix[prefix];
+                    const uniqueBerkasMap = {};
+                    prefixData.forEach(item => {
+                        const key = String(item.hal?.nomor || '0');
+                        if(!uniqueBerkasMap[key]) uniqueBerkasMap[key] = item;
+                    });
 
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Berhasil!',
-                    text: 'File Excel berhasil diunduh',
-                    timer: 2000,
-                    showConfirmButton: false
+                    let bIdx = 1;
+                    Object.values(uniqueBerkasMap).forEach(berkas => {
+                        summaryRows.push([
+                            bIdx++,
+                            berkas.hal?.nomor || "",
+                            berkas.kode?.Kode || "",
+                            berkas.kode?.Detail_kode || "",
+                            berkas.hal?.judul_berkas || "",
+                            "2025",
+                            "1 Berkas",
+                            "Tekstual",
+                            berkas.keamanan || "Biasa"
+                        ]);
+                    });
                 });
+
+                const wsSum = XLSX.utils.aoa_to_sheet(summaryRows);
+                wsSum['!merges'] = summaryMerges;
+                wsSum['!cols'] = [{wch:5}, {wch:12}, {wch:15}, {wch:25}, {wch:45}, {wch:12}, {wch:15}, {wch:15}, {wch:20}];
+                wsSum['!ref'] = XLSX.utils.encode_range({s: {c:0, r:0}, e: {c:8, r: summaryRows.length - 1}});
+
+                XLSX.utils.book_append_sheet(wb, wsSum, "DAFTAR BERKAS 2025");
+
+                // 4. EXPORT FILE
+                XLSX.writeFile(wb, `DAFTAR_ISI_DAN_DAFTAR_BERKAS_2025.xlsx`);
+                Swal.close();
 
             } catch (error) {
-                console.error('Error export Excel:', error);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Gagal Export',
-                    text: error.message,
-                    confirmButtonColor: '#d33'
-                });
+                console.error(error);
+                Swal.fire({ icon: 'error', title: 'Export Gagal', text: error.message });
             }
+        }
+
+        // Helper Mapping Nama Kategori (Lengkapi sesuai kebutuhan Basarnas)
+        function getCategoryName(prefix) {
+            const map = {
+                'PR': 'PERENCANAAN', 'KP': 'KEPEGAWAIAN', 'HK': 'HUKUM', 'ADM': 'ADMINISTRASI',
+                'KU': 'KEUANGAN', 'PL': 'PERLENGKAPAN', 'HM': 'HUMAS', 'KS': 'KERJA SAMA',
+                'BNP': 'BINA POTENSI', 'BNG': 'BINA TENAGA', 'SP': 'SARANA DAN PRASARANA',
+                'KOM': 'SISTEM KOMUNIKASI', 'KSG': 'KESIAPSIAGAAN', 'OPS': 'OPERASI',
+                'DI': 'DATA DAN INFORMASI', 'PS': 'PENGAWASAN', 'DL': 'PENDIDIKAN DAN PELATIHAN',
+                'OT': 'ORGANISASI DAN TATALAKSANA'
+            };
+            return map[prefix] || prefix;
         }
 
         // Export PDF
