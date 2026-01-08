@@ -1675,286 +1675,288 @@ $('#modalTambah').on('shown.bs.modal', function () {
         }
 
         // Fungsi Export Excel yang Diperbaiki
-        async function exportExcel() {
-            try {
-                Swal.fire({
-                    title: 'Memproses Export...',
-                    html: 'Menyusun data Excel...',
-                    allowOutsideClick: false,
-                    didOpen: () => { Swal.showLoading(); }
-                });
+        // Fungsi Export Excel Revisi (Grouping by Nomor & Judul Saja)
+async function exportExcel() {
+    try {
+        Swal.fire({
+            title: 'Memproses Export...',
+            html: 'Menyusun data Excel (Grouping: Nomor & Judul)...',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+        });
 
-                const allData = arsipTable.rows().data().toArray();
-                if (allData.length === 0) {
-                    Swal.fire('Info', 'Tidak ada data untuk di-export', 'info');
-                    return;
-                }
-
-                const wb = XLSX.utils.book_new();
-
-                // --- DEFINISI STYLE ---
-                const borderAll = {
-                    top: { style: "thin" }, bottom: { style: "thin" },
-                    left: { style: "thin" }, right: { style: "thin" }
-                };
-
-                const styleBase = {
-                    font: { name: "Arial", sz: 10 },
-                    alignment: { wrapText: true, vertical: "top", horizontal: "left" },
-                    border: borderAll
-                };
-
-                const styleCenter = {
-                    ...styleBase,
-                    alignment: { wrapText: true, vertical: "top", horizontal: "center" }
-                };
-
-                // Style untuk menyembunyikan border atas (saat data digabung)
-                const styleNoTop = {
-                    ...styleBase,
-                    border: {
-                        top: { style: "none" },
-                        bottom: { style: "thin" },
-                        left: { style: "thin" },
-                        right: { style: "thin" }
-                    }
-                };
-
-                const styleCenterNoTop = {
-                    ...styleCenter,
-                    border: {
-                        top: { style: "none" },
-                        bottom: { style: "thin" },
-                        left: { style: "thin" },
-                        right: { style: "thin" }
-                    }
-                };
-
-                const styleHeader = {
-                    font: { name: "Arial", sz: 10, bold: true },
-                    alignment: { wrapText: true, vertical: "center", horizontal: "center" },
-                    fill: { fgColor: { rgb: "DDEBF7" } },
-                    border: borderAll
-                };
-
-                const styleTitle = {
-                    font: { name: "Arial", sz: 14, bold: true },
-                    alignment: { horizontal: "center" }
-                };
-
-                const styleDivider = {
-                    font: { name: "Arial", sz: 11, bold: true },
-                    fill: { fgColor: { rgb: "E9ECEF" } },
-                    border: borderAll,
-                    alignment: { vertical: "center", horizontal: "left" }
-                };
-
-                const formatTglIndo = (dateStr) => {
-                    if (!dateStr) return "-";
-                    const d = new Date(dateStr);
-                    if (isNaN(d.getTime())) return dateStr;
-                    const bulan = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
-                    return `${d.getDate()} ${bulan[d.getMonth()]} ${d.getFullYear()}`;
-                };
-
-                // 1. GROUPING BY PREFIX
-                const groupedByPrefix = {};
-                allData.forEach(item => {
-                    const kodeFull = String(item.kode?.Kode || 'LAIN');
-                    const prefix = kodeFull.split('.')[0];
-                    if (!groupedByPrefix[prefix]) groupedByPrefix[prefix] = [];
-                    groupedByPrefix[prefix].push(item);
-                });
-
-                const sortedPrefixes = Object.keys(groupedByPrefix).sort();
-
-                // 2. LOOP SETIAP PREFIX
-                sortedPrefixes.forEach(prefix => {
-                    const rows = [];
-
-                    // Header
-                    rows.push([{ v: "DAFTAR ISI BERKAS", s: styleTitle }]);
-                    rows.push([""]);
-                    rows.push([{ v: "KANTOR PENCARIAN DAN PERTOLONGAN TARAKAN", s: styleTitle }]);
-
-                    const headers = [
-                        "NO", "NO BERKAS", "JUDUL BERKAS", "NO ITEM ARSIP",
-                        "KODE KLASIFIKASI", "",
-                        "URAIAN INFORMASI ARSIP", "TANGGAL", "JUMLAH", "KEAMANAN", "KETERANGAN"
-                    ];
-                    rows.push(headers.map(h => ({ v: h, s: styleHeader })));
-
-                    const subHeaders = ["(1)", "(2)", "(3)", "(4)", "(5)", "(6)", "(7)", "(8)", "(9)", "(10)", "(11)"];
-                    rows.push(subHeaders.map(h => ({ v: h, s: styleHeader })));
-
-                    // Divider Prefix
-                    rows.push([
-                        { v: "", s: styleDivider },
-                        { v: prefix, s: styleDivider },
-                        { v: getCategoryName(prefix), s: styleDivider },
-                        ...Array(8).fill({ v: "", s: styleDivider })
-                    ]);
-
-                    // --- PERBAIKAN SORTING & LOGIKA GROUPING DI SINI ---
-                    const dataSorted = groupedByPrefix[prefix].sort((a, b) => {
-                        // Prioritas 1: Kode Klasifikasi (Agar PL.01.01 kumpul dengan PL.01.01)
-                        const kA = String(a.kode?.Kode || "");
-                        const kB = String(b.kode?.Kode || "");
-                        const cmpKode = kA.localeCompare(kB, undefined, { numeric: true });
-                        if (cmpKode !== 0) return cmpKode;
-
-                        // Prioritas 2: Nomor Berkas
-                        const nbA = String(a.hal?.nomor || "");
-                        const nbB = String(b.hal?.nomor || "");
-                        const cmpNo = nbA.localeCompare(nbB, undefined, { numeric: true });
-                        if (cmpNo !== 0) return cmpNo;
-
-                        // Prioritas 3: No Arsip/Item
-                        return String(a.no_arsip || "").localeCompare(String(b.no_arsip || ""), undefined, { numeric: true });
-                    });
-
-                    let lastNoB = null;
-                    let lastKode = null; // Tambahkan pelacak Kode Terakhir
-                    let counter = 1;
-
-                    dataSorted.forEach((item) => {
-                        const currentNoB = String(item.hal?.nomor || "");
-                        const currentKode = String(item.kode?.Kode || ""); // Ambil kode saat ini
-
-                        // LOGIKA BARU:
-                        // Grup baru jika: (Nomor Berkas Berbeda) ATAU (Kode Klasifikasi Berbeda)
-                        // Ini akan memaksa PL.01.06 memisahkan diri dari PL.01.01 meskipun No Berkasnya sama
-                        const isNewGroup = (currentNoB !== lastNoB) || (currentKode !== lastKode);
-
-                        // Style Logic
-                        const styleNo = isNewGroup ? styleCenter : styleCenterNoTop;
-                        const styleGroup = isNewGroup ? styleBase : styleNoTop;
-
-                        // Value Logic
-                        const valNo = isNewGroup ? counter++ : "";
-                        const valNoBerkas = isNewGroup ? currentNoB : "";
-                        const valJudul = isNewGroup ? (item.hal?.judul_berkas || "") : "";
-
-                        rows.push([
-                            { v: valNo, s: styleNo },
-                            { v: valNoBerkas, s: styleGroup },
-                            { v: valJudul, s: styleGroup },
-                            { v: item.no_arsip || "-", s: styleCenter },
-                            { v: item.kode?.Kode || "", s: styleBase },
-                            { v: item.kode?.Detail_kode || "", s: styleBase },
-                            { v: item.uraian_informasi || "", s: styleBase },
-                            { v: formatTglIndo(item.tanggal), s: styleCenter },
-                            { v: `${item.jumlah || '0'} ${item.satuan || ''}`, s: styleCenter },
-                            { v: item.keamanan || "Biasa", s: styleCenter },
-                            { v: item.keterangan || "Tekstual", s: styleBase }
-                        ]);
-
-                        // Update pelacak
-                        lastNoB = currentNoB;
-                        lastKode = currentKode;
-                    });
-
-                    // Create Sheet
-                    const ws = XLSX.utils.aoa_to_sheet(rows);
-                    ws['!cols'] = [{wch: 5}, {wch: 15}, {wch: 35}, {wch: 10}, {wch: 12}, {wch: 25}, {wch: 40}, {wch: 15}, {wch: 10}, {wch: 15}, {wch: 15}];
-                    ws['!merges'] = [
-                        { s: { r: 0, c: 0 }, e: { r: 0, c: 10 } },
-                        { s: { r: 2, c: 0 }, e: { r: 2, c: 10 } },
-                        { s: { r: 3, c: 4 }, e: { r: 3, c: 5 } },
-                        { s: { r: 5, c: 2 }, e: { r: 5, c: 10 } }
-                    ];
-                    XLSX.utils.book_append_sheet(wb, ws, prefix);
-                });
-
-                // 3. SHEET DAFTAR BERKAS (SUMMARY)
-                const sRows = [];
-                sRows.push([{ v: "DAFTAR BERKAS", s: styleTitle }]);
-                sRows.push([{ v: "KANTOR PENCARIAN DAN PERTOLONGAN TARAKAN", s: styleTitle }]);
-                sRows.push([""]);
-
-                const sumHeaders = ["NO", "NO BERKAS", "KODE KLASIFIKASI", "", "URAIAN INFORMASI BERKAS", "KURUN WAKTU", "JUMLAH", "KETERANGAN", "KEAMANAN"];
-                sRows.push(sumHeaders.map(h => ({ v: h, s: styleHeader })));
-                sRows.push(["(1)", "(2)", "(3)", "(4)", "(5)", "(6)", "(7)", "(8)", "(9)"].map(h => ({ v: h, s: styleHeader })));
-
-                let currentRow = 5;
-                const summaryMerges = [
-                    { s: { r: 0, c: 0 }, e: { r: 0, c: 8 } },
-                    { s: { r: 1, c: 0 }, e: { r: 1, c: 8 } },
-                    { s: { r: 3, c: 2 }, e: { r: 3, c: 3 } }
-                ];
-
-                sortedPrefixes.forEach(prefix => {
-                    sRows.push([
-                        { v: "", s: styleDivider },
-                        { v: prefix, s: styleDivider },
-                        { v: getCategoryName(prefix), s: styleDivider },
-                        ...Array(6).fill({ v: "", s: styleDivider })
-                    ]);
-                    summaryMerges.push({ s: { r: currentRow, c: 2 }, e: { r: currentRow, c: 8 } });
-                    currentRow++;
-
-                    // Grouping Logic Summary (Juga diperbaiki agar memperhitungkan Kode)
-                    const berkasMap = {};
-                    groupedByPrefix[prefix].forEach(item => {
-                        // Key unik sekarang gabungan Kode + Nomor Berkas
-                        const key = `${item.kode?.Kode}-${item.hal?.nomor}`;
-                        if (!berkasMap[key]) {
-                            berkasMap[key] = {
-                                data: item, count: 0, years: []
-                            };
-                        }
-                        berkasMap[key].count++;
-                        if (item.tanggal) berkasMap[key].years.push(new Date(item.tanggal).getFullYear());
-                    });
-
-                    // Sort Summary
-                    Object.values(berkasMap)
-                        .sort((a, b) => {
-                            // Sort kode dulu, baru nomor
-                            const kA = String(a.data.kode?.Kode || "");
-                            const kB = String(b.data.kode?.Kode || "");
-                            if (kA !== kB) return kA.localeCompare(kB, undefined, { numeric: true });
-                            return String(a.data.hal?.nomor).localeCompare(String(b.data.hal?.nomor), undefined, { numeric: true });
-                        })
-                        .forEach((b, idx) => {
-                            const item = b.data;
-                            let kurun = "-";
-                            if (b.years.length > 0) {
-                                const min = Math.min(...b.years), max = Math.max(...b.years);
-                                kurun = min === max ? `${min}` : `${min} - ${max}`;
-                            }
-
-                            sRows.push([
-                                { v: idx + 1, s: styleCenter },
-                                { v: item.hal?.nomor || "", s: styleBase },
-                                { v: item.kode?.Kode || "", s: styleBase },
-                                { v: item.kode?.Detail_kode || "", s: styleBase },
-                                { v: item.hal?.judul_berkas || "", s: styleBase },
-                                { v: kurun, s: styleCenter },
-                                { v: b.count + " Item", s: styleCenter },
-                                { v: item.keterangan || "Tekstual", s: styleBase },
-                                { v: item.keamanan || "Biasa", s: styleCenter }
-                            ]);
-                            currentRow++;
-                        });
-                });
-
-                const wsSum = XLSX.utils.aoa_to_sheet(sRows);
-                wsSum['!merges'] = summaryMerges;
-                wsSum['!cols'] = [{wch:5}, {wch:15}, {wch:12}, {wch:25}, {wch:40}, {wch:15}, {wch:10}, {wch:15}, {wch:15}];
-
-                XLSX.utils.book_append_sheet(wb, wsSum, "DAFTAR BERKAS");
-
-                const fileName = `DATA_ARSIP_${new Date().toISOString().slice(0,10)}.xlsx`;
-                XLSX.writeFile(wb, fileName);
-
-                Swal.close();
-
-            } catch (error) {
-                console.error(error);
-                Swal.fire({ icon: 'error', title: 'Export Gagal', text: error.message });
-            }
+        const allData = arsipTable.rows().data().toArray();
+        if (allData.length === 0) {
+            Swal.fire('Info', 'Tidak ada data untuk di-export', 'info');
+            return;
         }
+
+        const wb = XLSX.utils.book_new();
+
+        // --- DEFINISI STYLE (Sama seperti sebelumnya) ---
+        const borderAll = {
+            top: { style: "thin" }, bottom: { style: "thin" },
+            left: { style: "thin" }, right: { style: "thin" }
+        };
+
+        const styleBase = {
+            font: { name: "Arial", sz: 10 },
+            alignment: { wrapText: true, vertical: "top", horizontal: "left" },
+            border: borderAll
+        };
+
+        const styleCenter = {
+            ...styleBase,
+            alignment: { wrapText: true, vertical: "top", horizontal: "center" }
+        };
+
+        const styleNoTop = {
+            ...styleBase,
+            border: {
+                top: { style: "none" },
+                bottom: { style: "thin" },
+                left: { style: "thin" },
+                right: { style: "thin" }
+            }
+        };
+
+        const styleCenterNoTop = {
+            ...styleCenter,
+            border: {
+                top: { style: "none" },
+                bottom: { style: "thin" },
+                left: { style: "thin" },
+                right: { style: "thin" }
+            }
+        };
+
+        const styleHeader = {
+            font: { name: "Arial", sz: 10, bold: true },
+            alignment: { wrapText: true, vertical: "center", horizontal: "center" },
+            fill: { fgColor: { rgb: "DDEBF7" } },
+            border: borderAll
+        };
+
+        const styleTitle = {
+            font: { name: "Arial", sz: 14, bold: true },
+            alignment: { horizontal: "center" }
+        };
+
+        const styleDivider = {
+            font: { name: "Arial", sz: 11, bold: true },
+            fill: { fgColor: { rgb: "E9ECEF" } },
+            border: borderAll,
+            alignment: { vertical: "center", horizontal: "left" }
+        };
+
+        const formatTglIndo = (dateStr) => {
+            if (!dateStr) return "-";
+            const d = new Date(dateStr);
+            if (isNaN(d.getTime())) return dateStr;
+            const bulan = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+            return `${d.getDate()} ${bulan[d.getMonth()]} ${d.getFullYear()}`;
+        };
+
+        // 1. GROUPING BY PREFIX
+        const groupedByPrefix = {};
+        allData.forEach(item => {
+            const kodeFull = String(item.kode?.Kode || 'LAIN');
+            const prefix = kodeFull.split('.')[0];
+            if (!groupedByPrefix[prefix]) groupedByPrefix[prefix] = [];
+            groupedByPrefix[prefix].push(item);
+        });
+
+        const sortedPrefixes = Object.keys(groupedByPrefix).sort();
+
+        // 2. LOOP SETIAP PREFIX
+        sortedPrefixes.forEach(prefix => {
+            const rows = [];
+
+            // Header Area
+            rows.push([{ v: "DAFTAR ISI BERKAS", s: styleTitle }]);
+            rows.push([""]);
+            rows.push([{ v: "KANTOR PENCARIAN DAN PERTOLONGAN TARAKAN", s: styleTitle }]);
+
+            const headers = [
+                "NO", "NO BERKAS", "JUDUL BERKAS", "NO ITEM ARSIP",
+                "KODE KLASIFIKASI", "",
+                "URAIAN INFORMASI ARSIP", "TANGGAL", "JUMLAH", "KEAMANAN", "KETERANGAN"
+            ];
+            rows.push(headers.map(h => ({ v: h, s: styleHeader })));
+
+            const subHeaders = ["(1)", "(2)", "(3)", "(4)", "(5)", "(6)", "(7)", "(8)", "(9)", "(10)", "(11)"];
+            rows.push(subHeaders.map(h => ({ v: h, s: styleHeader })));
+
+            // Divider Prefix
+            rows.push([
+                { v: "", s: styleDivider },
+                { v: prefix, s: styleDivider },
+                { v: getCategoryName(prefix), s: styleDivider },
+                ...Array(8).fill({ v: "", s: styleDivider })
+            ]);
+
+            // --- SORTING (Nomor -> Judul) ---
+            const dataSorted = groupedByPrefix[prefix].sort((a, b) => {
+                // 1. Nomor Berkas
+                const nA = String(a.hal?.nomor || "");
+                const nB = String(b.hal?.nomor || "");
+                const cmpNo = nA.localeCompare(nB, undefined, { numeric: true });
+                if (cmpNo !== 0) return cmpNo;
+
+                // 2. Judul Berkas
+                const jA = String(a.hal?.judul_berkas || "");
+                const jB = String(b.hal?.judul_berkas || "");
+                return jA.localeCompare(jB);
+            });
+
+            // Variable pelacak
+            let lastNoB = null;
+            let lastJudul = null;
+            let counter = 1;
+
+            dataSorted.forEach((item) => {
+                const currentNoB = String(item.hal?.nomor || "");
+                const currentJudul = String(item.hal?.judul_berkas || "");
+
+                // --- LOGIKA GROUPING UPDATE ---
+                // Hanya check Nomor dan Judul
+                const isNewGroup = (currentNoB !== lastNoB) || (currentJudul !== lastJudul);
+
+                // Style Logic
+                const styleNo = isNewGroup ? styleCenter : styleCenterNoTop;
+                const styleGroup = isNewGroup ? styleBase : styleNoTop;
+
+                // Value Logic
+                const valNo = isNewGroup ? counter++ : "";
+                const valNoBerkas = isNewGroup ? currentNoB : "";
+                const valJudul = isNewGroup ? currentJudul : "";
+
+                rows.push([
+                    { v: valNo, s: styleNo },
+                    { v: valNoBerkas, s: styleGroup },
+                    { v: valJudul, s: styleGroup },
+                    { v: item.no_arsip || "-", s: styleCenter },
+                    { v: item.kode?.Kode || "", s: styleBase },
+                    { v: item.kode?.Detail_kode || "", s: styleBase },
+                    { v: item.uraian_informasi || "", s: styleBase },
+                    { v: formatTglIndo(item.tanggal), s: styleCenter },
+                    { v: `${item.jumlah || '0'} ${item.satuan || ''}`, s: styleCenter },
+                    { v: item.keamanan || "Biasa", s: styleCenter },
+                    { v: item.keterangan || "Tekstual", s: styleBase }
+                ]);
+
+                // Update pelacak
+                lastNoB = currentNoB;
+                lastJudul = currentJudul;
+            });
+
+            // Create Sheet
+            const ws = XLSX.utils.aoa_to_sheet(rows);
+            ws['!cols'] = [{wch: 5}, {wch: 15}, {wch: 35}, {wch: 10}, {wch: 12}, {wch: 25}, {wch: 40}, {wch: 15}, {wch: 10}, {wch: 15}, {wch: 15}];
+
+            // Merge Header & Title
+            ws['!merges'] = [
+                { s: { r: 0, c: 0 }, e: { r: 0, c: 10 } },
+                { s: { r: 2, c: 0 }, e: { r: 2, c: 10 } },
+                { s: { r: 3, c: 4 }, e: { r: 3, c: 5 } },
+                { s: { r: 5, c: 2 }, e: { r: 5, c: 10 } }
+            ];
+            XLSX.utils.book_append_sheet(wb, ws, prefix);
+        });
+
+        // 3. SHEET DAFTAR BERKAS (SUMMARY)
+        const sRows = [];
+        sRows.push([{ v: "DAFTAR BERKAS", s: styleTitle }]);
+        sRows.push([{ v: "KANTOR PENCARIAN DAN PERTOLONGAN TARAKAN", s: styleTitle }]);
+        sRows.push([""]);
+
+        const sumHeaders = ["NO", "NO BERKAS", "KODE KLASIFIKASI", "", "URAIAN INFORMASI BERKAS", "KURUN WAKTU", "JUMLAH", "KETERANGAN", "KEAMANAN"];
+        sRows.push(sumHeaders.map(h => ({ v: h, s: styleHeader })));
+        sRows.push(["(1)", "(2)", "(3)", "(4)", "(5)", "(6)", "(7)", "(8)", "(9)"].map(h => ({ v: h, s: styleHeader })));
+
+        let currentRow = 5;
+        const summaryMerges = [
+            { s: { r: 0, c: 0 }, e: { r: 0, c: 8 } },
+            { s: { r: 1, c: 0 }, e: { r: 1, c: 8 } },
+            { s: { r: 3, c: 2 }, e: { r: 3, c: 3 } }
+        ];
+
+        sortedPrefixes.forEach(prefix => {
+            sRows.push([
+                { v: "", s: styleDivider },
+                { v: prefix, s: styleDivider },
+                { v: getCategoryName(prefix), s: styleDivider },
+                ...Array(6).fill({ v: "", s: styleDivider })
+            ]);
+            summaryMerges.push({ s: { r: currentRow, c: 2 }, e: { r: currentRow, c: 8 } });
+            currentRow++;
+
+            // Grouping Logic Summary
+            const berkasMap = {};
+            groupedByPrefix[prefix].forEach(item => {
+                // Key unik sekarang hanya Nomor + Judul
+                const kNomor = String(item.hal?.nomor || "");
+                const kJudul = String(item.hal?.judul_berkas || "");
+
+                const key = `${kNomor}|${kJudul}`;
+
+                if (!berkasMap[key]) {
+                    berkasMap[key] = {
+                        data: item, count: 0, years: []
+                    };
+                }
+                berkasMap[key].count++;
+                if (item.tanggal) berkasMap[key].years.push(new Date(item.tanggal).getFullYear());
+            });
+
+            // Sort Summary
+            Object.values(berkasMap)
+                .sort((a, b) => {
+                    const nA = String(a.data.hal?.nomor || "");
+                    const nB = String(b.data.hal?.nomor || "");
+                    if (nA !== nB) return nA.localeCompare(nB, undefined, { numeric: true });
+
+                    return String(a.data.hal?.judul_berkas).localeCompare(String(b.data.hal?.judul_berkas));
+                })
+                .forEach((b, idx) => {
+                    const item = b.data;
+                    let kurun = "-";
+                    if (b.years.length > 0) {
+                        const min = Math.min(...b.years), max = Math.max(...b.years);
+                        kurun = min === max ? `${min}` : `${min} - ${max}`;
+                    }
+
+                    sRows.push([
+                        { v: idx + 1, s: styleCenter },
+                        { v: item.hal?.nomor || "", s: styleBase },
+                        { v: item.kode?.Kode || "", s: styleBase },
+                        { v: item.kode?.Detail_kode || "", s: styleBase },
+                        { v: item.hal?.judul_berkas || "", s: styleBase },
+                        { v: kurun, s: styleCenter },
+                        { v: b.count + " Item", s: styleCenter },
+                        { v: item.keterangan || "Tekstual", s: styleBase },
+                        { v: item.keamanan || "Biasa", s: styleCenter }
+                    ]);
+                    currentRow++;
+                });
+        });
+
+        const wsSum = XLSX.utils.aoa_to_sheet(sRows);
+        wsSum['!merges'] = summaryMerges;
+        wsSum['!cols'] = [{wch:5}, {wch:15}, {wch:12}, {wch:25}, {wch:40}, {wch:15}, {wch:10}, {wch:15}, {wch:15}];
+
+        XLSX.utils.book_append_sheet(wb, wsSum, "DAFTAR BERKAS");
+
+        const fileName = `DATA_ARSIP_${new Date().toISOString().slice(0,10)}.xlsx`;
+        XLSX.writeFile(wb, fileName);
+
+        Swal.close();
+
+    } catch (error) {
+        console.error(error);
+        Swal.fire({ icon: 'error', title: 'Export Gagal', text: error.message });
+    }
+}
 
         function getCategoryName(prefix) {
             const map = {
