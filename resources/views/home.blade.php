@@ -764,101 +764,109 @@ $('#modalTambah').on('shown.bs.modal', function () {
                 },
                 processing: true,
                 serverSide: false,
-                drawCallback: function() {
-                    var api = this.api();
-                    var rows = api.rows({page: 'current'}).nodes();
-                    var groupMap = {};
+                drawCallback: function(settings) {
+                var api = this.api();
+                var groupMap = {};
 
-                    api.rows({page: 'current'}).every(function(rowIdx) {
-                        var data = this.data();
-                        var nomor = data.hal && data.hal.nomor ? data.hal.nomor : '';
-                        var judul = data.hal && data.hal.judul_berkas ? data.hal.judul_berkas : '';
-                        var kode = data.kode && data.kode.Kode ? data.kode.Kode : '';
-                        var groupKey = nomor + '|' + judul + '|' + kode;
+                // LOOP 1: Membangun Group Map (Logic tetap sama)
+                api.rows({page: 'current'}).every(function(rowIdx, tableLoop, rowLoop) {
+                    var data = this.data();
+                    var nomor = data.hal && data.hal.nomor ? data.hal.nomor : '';
+                    var judul = data.hal && data.hal.judul_berkas ? data.hal.judul_berkas : '';
+                    var kode = data.kode && data.kode.Kode ? data.kode.Kode : '';
+                    var groupKey = nomor + '|' + judul + '|' + kode;
 
-                        if (!groupMap[groupKey]) {
-                            groupMap[groupKey] = {
-                                ids: [],
-                                firstRowIdx: rowIdx,
-                                nomor: nomor,
-                                judul: judul,
-                                kode: kode
-                            };
-                        }
-                        groupMap[groupKey].ids.push(data.id);
-                    });
+                    if (!groupMap[groupKey]) {
+                        groupMap[groupKey] = {
+                            ids: [],
+                            nomor: nomor,
+                            judul: judul,
+                            kode: kode
+                        };
+                    }
+                    groupMap[groupKey].ids.push(data.id);
+                });
 
-                    var lastGroup = null;
-                    api.rows({page: 'current'}).every(function(rowIdx) {
-                        var data = this.data();
-                        var nomor = data.hal && data.hal.nomor ? data.hal.nomor : '';
-                        var judul = data.hal && data.hal.judul_berkas ? data.hal.judul_berkas : '';
-                        var kode = data.kode && data.kode.Kode ? data.kode.Kode : '';
-                        var currentGroup = nomor + '|' + judul + '|' + kode;
+                var lastGroup = null;
 
-                        var groupInfo = groupMap[currentGroup];
-                        var groupSize = groupInfo.ids.length;
+                // LOOP 2: Render Tampilan (PERBAIKAN DI SINI)
+                api.rows({page: 'current'}).every(function(rowIdx, tableLoop, rowLoop) {
+                    var data = this.data();
+                    var tr = this.node(); // <--- MENGGUNAKAN TR LANGSUNG DARI API
+                    var $tr = $(tr);      // Wrap dalam jQuery
 
-                        if (lastGroup === currentGroup && lastGroup !== '') {
-                            $(rows[rowIdx]).addClass('grouped-row');
-                            $(rows[rowIdx]).find('td:eq(1)').html('');
-                            $(rows[rowIdx]).find('td:eq(2)').html('');
-                            $(rows[rowIdx]).find('td:eq(4)').html('');
-                            $(rows[rowIdx]).find('td:eq(10)').html('');
+                    var nomor = data.hal && data.hal.nomor ? data.hal.nomor : '';
+                    var judul = data.hal && data.hal.judul_berkas ? data.hal.judul_berkas : '';
+                    var kode = data.kode && data.kode.Kode ? data.kode.Kode : '';
+                    var currentGroup = nomor + '|' + judul + '|' + kode;
 
-                            $(rows[rowIdx]).find('td:eq(1)').css('border-top', 'none');
-                            $(rows[rowIdx]).find('td:eq(2)').css('border-top', 'none');
-                            $(rows[rowIdx]).find('td:eq(4)').css('border-top', 'none');
-                            $(rows[rowIdx]).find('td:eq(10)').css('border-top', 'none');
+                    var groupInfo = groupMap[currentGroup];
+                    var groupSize = groupInfo.ids.length;
+
+                    // Reset style dulu untuk mencegah glitch saat redraw
+                    $tr.removeClass('grouped-row');
+                    $tr.find('td').css('border-top', '');
+
+                    if (lastGroup === currentGroup && lastGroup !== '') {
+                        // Ini adalah baris ke-2 dst dalam grup (sembunyikan sel yang digabung)
+                        $tr.addClass('grouped-row');
+
+                        // Kosongkan sel yang digroup
+                        $tr.find('td:eq(1)').html('').css('border-top', 'none'); // No Arsip (Kolom ke-2, index 1)
+                        $tr.find('td:eq(2)').html('').css('border-top', 'none'); // Judul Berkas
+                        $tr.find('td:eq(4)').html('').css('border-top', 'none'); // Kode Klasifikasi
+                        $tr.find('td:eq(10)').html('').css('border-top', 'none'); // Aksi
+
+                    } else {
+                        // Ini adalah baris PERTAMA dalam grup (Tampilkan Data & Aksi)
+
+                        // Styling Header Group
+                        var styleHeader = {
+                            'font-weight': '600',
+                            'vertical-align': 'middle',
+                            'background-color': '#f8f9fa'
+                        };
+
+                        $tr.find('td:eq(1)').css(styleHeader);
+                        $tr.find('td:eq(2)').css(styleHeader);
+                        $tr.find('td:eq(4)').css(styleHeader);
+
+                        // RENDER TOMBOL AKSI
+                        var actionCell = $tr.find('.action-cell');
+                        var actionHtml = '';
+
+                        if (groupSize > 1) {
+                            // Tombol Group Action
+                            actionHtml = `
+                                <button class="btn btn-outline-primary btn-sm"
+                                        onclick='showGroupAction(${JSON.stringify(groupInfo.ids)}, "${groupInfo.nomor}", "${groupInfo.judul}")'
+                                        title="Aksi Group (${groupSize} data)">
+                                    <i class="bi bi-gear"></i>
+                                    <span class="badge bg-primary">${groupSize}</span>
+                                </button>
+                            `;
+                            $tr.find('td:eq(10)').addClass('action-group-cell');
                         } else {
-                            $(rows[rowIdx]).find('td:eq(1)').css({
-                                'font-weight': '600',
-                                'vertical-align': 'middle',
-                                'background-color': '#f8f9fa'
-                            });
-                            $(rows[rowIdx]).find('td:eq(2)').css({
-                                'font-weight': '600',
-                                'vertical-align': 'middle',
-                                'background-color': '#f8f9fa'
-                            });
-                            $(rows[rowIdx]).find('td:eq(4)').css({
-                                'font-weight': '600',
-                                'vertical-align': 'middle',
-                                'background-color': '#f8f9fa'
-                            });
-
-                            var actionCell = $(rows[rowIdx]).find('.action-cell');
-                            var actionHtml = '';
-
-                            if (groupSize > 1) {
-                                actionHtml = `
-                                    <button class="btn btn-outline-primary btn-sm"
-                                            onclick='showGroupAction(${JSON.stringify(groupInfo.ids)}, "${groupInfo.nomor}", "${groupInfo.judul}")'
-                                            title="Aksi Group (${groupSize} data)">
-                                        <i class="bi bi-gear"></i>
-                                        <span class="badge bg-primary">${groupSize}</span>
+                            // Tombol Single Action
+                            actionHtml = `
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button class="btn btn-outline-primary" onclick="editArsip(${data.id})" title="Edit">
+                                        <i class="bi bi-pencil"></i>
                                     </button>
-                                `;
-                                $(rows[rowIdx]).find('td:eq(10)').addClass('action-group-cell');
-                            } else {
-                                actionHtml = `
-                                    <div class="btn-group btn-group-sm" role="group">
-                                        <button class="btn btn-outline-primary" onclick="editArsip(${data.id})" title="Edit">
-                                            <i class="bi bi-pencil"></i>
-                                        </button>
-                                        <button class="btn btn-outline-danger" onclick="hapusArsip(${data.id})" title="Hapus">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </div>
-                                `;
-                            }
-
-                            actionCell.html(actionHtml);
+                                    <button class="btn btn-outline-danger" onclick="hapusArsip(${data.id})" title="Hapus">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            `;
                         }
 
-                        lastGroup = currentGroup;
-                    });
-                }
+                        // Masukkan HTML ke dalam div .action-cell
+                        actionCell.html(actionHtml);
+                    }
+
+                    lastGroup = currentGroup;
+                });
+            }
             });
         }
 
