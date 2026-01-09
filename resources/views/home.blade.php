@@ -635,7 +635,7 @@ $('#modalTambah').on('shown.bs.modal', function () {
 });
 
         // Initialize DataTable
-        function initDataTable() {
+function initDataTable() {
             arsipTable = $('#arsipTable').DataTable({
                 ajax: {
                     url: 'http://127.0.0.1:8000/api/berkas',
@@ -658,6 +658,11 @@ $('#modalTambah').on('shown.bs.modal', function () {
                         });
                     }
                 },
+                // === PERUBAHAN DI SINI ===
+                // Ubah index 1 menjadi 10 (Kolom ID)
+                // Ini akan mengurutkan berdasarkan ID terbesar (data paling baru) ke terkecil
+                order: [[1  , 'desc']],
+                // ==========================
                 columns: [
                     {
                         data: null,
@@ -665,9 +670,9 @@ $('#modalTambah').on('shown.bs.modal', function () {
                         render: (data, type, row, meta) => meta.row + 1
                     },
                     {
-                        data: null,
-                        render: function(data) {
-                            return data.hal && data.hal.nomor ? data.hal.nomor : '-';
+                        data: 'hal.nomor', // Pastikan data source ke hal.nomor agar bisa disortir manual jika perlu
+                        render: function(data, type, row) {
+                            return row.hal && row.hal.nomor ? row.hal.nomor : '-';
                         }
                     },
                     {
@@ -745,8 +750,9 @@ $('#modalTambah').on('shown.bs.modal', function () {
                         defaultContent: '-'
                     },
                     {
+                        // Ini adalah kolom index ke-10 (ID) yang kita gunakan untuk sorting
                         data: 'id',
-                        orderable: false,
+                        orderable: false, // Set true jika ingin user bisa klik header untuk sort manual, tapi false juga oke jika hanya untuk default
                         render: function(data) {
                             return `<div class="action-cell" data-id="${data}"></div>`;
                         }
@@ -755,7 +761,6 @@ $('#modalTambah').on('shown.bs.modal', function () {
                 responsive: true,
                 pageLength: 10,
                 lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Semua"]],
-                order: [[1, 'asc']],
                 language: {
                     url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/id.json',
                     emptyTable: "Tidak ada data tersedia",
@@ -765,108 +770,99 @@ $('#modalTambah').on('shown.bs.modal', function () {
                 processing: true,
                 serverSide: false,
                 drawCallback: function(settings) {
-                var api = this.api();
-                var groupMap = {};
+                    var api = this.api();
+                    var groupMap = {};
 
-                // LOOP 1: Membangun Group Map (Logic tetap sama)
-                api.rows({page: 'current'}).every(function(rowIdx, tableLoop, rowLoop) {
-                    var data = this.data();
-                    var nomor = data.hal && data.hal.nomor ? data.hal.nomor : '';
-                    var judul = data.hal && data.hal.judul_berkas ? data.hal.judul_berkas : '';
-                    var kode = data.kode && data.kode.Kode ? data.kode.Kode : '';
-                    var groupKey = nomor + '|' + judul + '|' + kode;
+                    // LOOP 1: Membangun Group Map
+                    api.rows({page: 'current'}).every(function(rowIdx, tableLoop, rowLoop) {
+                        var data = this.data();
+                        var nomor = data.hal && data.hal.nomor ? data.hal.nomor : '';
+                        var judul = data.hal && data.hal.judul_berkas ? data.hal.judul_berkas : '';
+                        var kode = data.kode && data.kode.Kode ? data.kode.Kode : '';
+                        var groupKey = nomor + '|' + judul + '|' + kode;
 
-                    if (!groupMap[groupKey]) {
-                        groupMap[groupKey] = {
-                            ids: [],
-                            nomor: nomor,
-                            judul: judul,
-                            kode: kode
-                        };
-                    }
-                    groupMap[groupKey].ids.push(data.id);
-                });
+                        if (!groupMap[groupKey]) {
+                            groupMap[groupKey] = {
+                                ids: [],
+                                nomor: nomor,
+                                judul: judul,
+                                kode: kode
+                            };
+                        }
+                        groupMap[groupKey].ids.push(data.id);
+                    });
 
-                var lastGroup = null;
+                    var lastGroup = null;
 
-                // LOOP 2: Render Tampilan (PERBAIKAN DI SINI)
-                api.rows({page: 'current'}).every(function(rowIdx, tableLoop, rowLoop) {
-                    var data = this.data();
-                    var tr = this.node(); // <--- MENGGUNAKAN TR LANGSUNG DARI API
-                    var $tr = $(tr);      // Wrap dalam jQuery
+                    // LOOP 2: Render Tampilan Grouping
+                    api.rows({page: 'current'}).every(function(rowIdx, tableLoop, rowLoop) {
+                        var data = this.data();
+                        var tr = this.node();
+                        var $tr = $(tr);
 
-                    var nomor = data.hal && data.hal.nomor ? data.hal.nomor : '';
-                    var judul = data.hal && data.hal.judul_berkas ? data.hal.judul_berkas : '';
-                    var kode = data.kode && data.kode.Kode ? data.kode.Kode : '';
-                    var currentGroup = nomor + '|' + judul + '|' + kode;
+                        var nomor = data.hal && data.hal.nomor ? data.hal.nomor : '';
+                        var judul = data.hal && data.hal.judul_berkas ? data.hal.judul_berkas : '';
+                        var kode = data.kode && data.kode.Kode ? data.kode.Kode : '';
+                        var currentGroup = nomor + '|' + judul + '|' + kode;
 
-                    var groupInfo = groupMap[currentGroup];
-                    var groupSize = groupInfo.ids.length;
+                        var groupInfo = groupMap[currentGroup];
+                        var groupSize = groupInfo.ids.length;
 
-                    // Reset style dulu untuk mencegah glitch saat redraw
-                    $tr.removeClass('grouped-row');
-                    $tr.find('td').css('border-top', '');
+                        // Reset style
+                        $tr.removeClass('grouped-row');
+                        $tr.find('td').css('border-top', '');
 
-                    if (lastGroup === currentGroup && lastGroup !== '') {
-                        // Ini adalah baris ke-2 dst dalam grup (sembunyikan sel yang digabung)
-                        $tr.addClass('grouped-row');
-
-                        // Kosongkan sel yang digroup
-                        $tr.find('td:eq(1)').html('').css('border-top', 'none'); // No Arsip (Kolom ke-2, index 1)
-                        $tr.find('td:eq(2)').html('').css('border-top', 'none'); // Judul Berkas
-                        $tr.find('td:eq(4)').html('').css('border-top', 'none'); // Kode Klasifikasi
-                        $tr.find('td:eq(10)').html('').css('border-top', 'none'); // Aksi
-
-                    } else {
-                        // Ini adalah baris PERTAMA dalam grup (Tampilkan Data & Aksi)
-
-                        // Styling Header Group
-                        var styleHeader = {
-                            'font-weight': '600',
-                            'vertical-align': 'middle',
-                            'background-color': '#f8f9fa'
-                        };
-
-                        $tr.find('td:eq(1)').css(styleHeader);
-                        $tr.find('td:eq(2)').css(styleHeader);
-                        $tr.find('td:eq(4)').css(styleHeader);
-
-                        // RENDER TOMBOL AKSI
-                        var actionCell = $tr.find('.action-cell');
-                        var actionHtml = '';
-
-                        if (groupSize > 1) {
-                            // Tombol Group Action
-                            actionHtml = `
-                                <button class="btn btn-outline-primary btn-sm"
-                                        onclick='showGroupAction(${JSON.stringify(groupInfo.ids)}, "${groupInfo.nomor}", "${groupInfo.judul}")'
-                                        title="Aksi Group (${groupSize} data)">
-                                    <i class="bi bi-gear"></i>
-                                    <span class="badge bg-primary">${groupSize}</span>
-                                </button>
-                            `;
-                            $tr.find('td:eq(10)').addClass('action-group-cell');
+                        if (lastGroup === currentGroup && lastGroup !== '') {
+                            // Baris ke-2 dst dalam grup (Hidden cells)
+                            $tr.addClass('grouped-row');
+                            $tr.find('td:eq(1)').html('').css('border-top', 'none'); // No Arsip
+                            $tr.find('td:eq(2)').html('').css('border-top', 'none'); // Judul
+                            $tr.find('td:eq(4)').html('').css('border-top', 'none'); // Kode
+                            $tr.find('td:eq(10)').html('').css('border-top', 'none'); // Aksi
                         } else {
-                            // Tombol Single Action
-                            actionHtml = `
-                                <div class="btn-group btn-group-sm" role="group">
-                                    <button class="btn btn-outline-primary" onclick="editArsip(${data.id})" title="Edit">
-                                        <i class="bi bi-pencil"></i>
+                            // Baris PERTAMA dalam grup (Header cells)
+                            var styleHeader = {
+                                'font-weight': '600',
+                                'vertical-align': 'middle',
+                                'background-color': '#f8f9fa'
+                            };
+
+                            $tr.find('td:eq(1)').css(styleHeader);
+                            $tr.find('td:eq(2)').css(styleHeader);
+                            $tr.find('td:eq(4)').css(styleHeader);
+
+                            // Render Tombol Aksi
+                            var actionCell = $tr.find('.action-cell');
+                            var actionHtml = '';
+
+                            if (groupSize > 1) {
+                                actionHtml = `
+                                    <button class="btn btn-outline-primary btn-sm"
+                                            onclick='showGroupAction(${JSON.stringify(groupInfo.ids)}, "${groupInfo.nomor}", "${groupInfo.judul}")'
+                                            title="Aksi Group (${groupSize} data)">
+                                        <i class="bi bi-gear"></i>
+                                        <span class="badge bg-primary">${groupSize}</span>
                                     </button>
-                                    <button class="btn btn-outline-danger" onclick="hapusArsip(${data.id})" title="Hapus">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </div>
-                            `;
+                                `;
+                                $tr.find('td:eq(10)').addClass('action-group-cell');
+                            } else {
+                                actionHtml = `
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button class="btn btn-outline-primary" onclick="editArsip(${data.id})" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn btn-outline-danger" onclick="hapusArsip(${data.id})" title="Hapus">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                `;
+                            }
+                            actionCell.html(actionHtml);
                         }
 
-                        // Masukkan HTML ke dalam div .action-cell
-                        actionCell.html(actionHtml);
-                    }
-
-                    lastGroup = currentGroup;
-                });
-            }
+                        lastGroup = currentGroup;
+                    });
+                }
             });
         }
 
@@ -1803,15 +1799,21 @@ async function exportExcel() {
                 ...Array(8).fill({ v: "", s: styleDivider })
             ]);
 
-            // --- SORTING (Nomor -> Judul) ---
+            // --- SORTING (Kode Klasifikasi -> Nomor -> Judul) ---
             const dataSorted = groupedByPrefix[prefix].sort((a, b) => {
-                // 1. Nomor Berkas
+                // 1. PRIORITAS UTAMA: Kode Klasifikasi (Misal: KSG.01.01 harus sebelum KSG.02.01)
+                const kA = String(a.kode?.Kode || "");
+                const kB = String(b.kode?.Kode || "");
+                const cmpKode = kA.localeCompare(kB, undefined, { numeric: true, sensitivity: 'base' });
+                if (cmpKode !== 0) return cmpKode;
+
+                // 2. PRIORITAS KEDUA: Nomor Berkas
                 const nA = String(a.hal?.nomor || "");
                 const nB = String(b.hal?.nomor || "");
                 const cmpNo = nA.localeCompare(nB, undefined, { numeric: true });
                 if (cmpNo !== 0) return cmpNo;
 
-                // 2. Judul Berkas
+                // 3. PRIORITAS KETIGA: Judul Berkas
                 const jA = String(a.hal?.judul_berkas || "");
                 const jB = String(b.hal?.judul_berkas || "");
                 return jA.localeCompare(jB);
@@ -1918,12 +1920,22 @@ async function exportExcel() {
             });
 
             // Sort Summary
-            Object.values(berkasMap)
+          Object.values(berkasMap)
                 .sort((a, b) => {
+                    // 1. PRIORITAS UTAMA: Kode Klasifikasi (Misal: KSG.01 harus sebelum KSG.02)
+                    const kA = String(a.data.kode?.Kode || "");
+                    const kB = String(b.data.kode?.Kode || "");
+                    // sensitivity: 'base' mengabaikan huruf besar/kecil, numeric: true agar 10 setelah 2
+                    const cmpKode = kA.localeCompare(kB, undefined, { numeric: true, sensitivity: 'base' });
+                    if (cmpKode !== 0) return cmpKode;
+
+                    // 2. PRIORITAS KEDUA: Nomor Berkas
                     const nA = String(a.data.hal?.nomor || "");
                     const nB = String(b.data.hal?.nomor || "");
-                    if (nA !== nB) return nA.localeCompare(nB, undefined, { numeric: true });
+                    const cmpNo = nA.localeCompare(nB, undefined, { numeric: true });
+                    if (cmpNo !== 0) return cmpNo;
 
+                    // 3. PRIORITAS KETIGA: Judul Berkas
                     return String(a.data.hal?.judul_berkas).localeCompare(String(b.data.hal?.judul_berkas));
                 })
                 .forEach((b, idx) => {
