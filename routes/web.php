@@ -8,5 +8,9 @@ Route::get('/', function () {
 });
 Route::get('/home', [HomeController::class, 'index']);
 Route::get('/arsip', [HomeController::class, 'arsip'])->name('arsip');
-Route::get('/klasifikasi', [HomeController::class, 'klasifikasi'])->name('klasifikasi');
 Route::get('/dashboard', [HomeController::class, 'dashboard'])->name('dashboard');
+Route::get('/klasifikasi', function () {
+    return view('klasifikasi'); // Pastikan ini sesuai dengan nama layout kamu
+});
+// routes/web.php (Frontend)
+

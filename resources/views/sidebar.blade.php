@@ -19,7 +19,7 @@
             <i class="bi bi-folder2-open"></i>
             <span>Data Arsip</span>
         </a>
-        <a href="" class="menu-item" data-page="klasifikasi">
+        <a href="/klasifikasi" class="menu-item" data-page="klasifikasi">
             <i class="bi bi-tags"></i>
             <span>Klasifikasi</span>
         </a>
