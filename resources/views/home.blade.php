@@ -669,7 +669,7 @@
     let currentEditId    = null;
     let isEditMode       = false;
 
-    const API_BASE = 'http://127.0.0.1:8000/api';
+    const API_BASE = 'http://192.168.100.178:8000/api';
 
     // ════════════════════════════════════════════════════════════
     //  INITIALIZATION
@@ -770,7 +770,7 @@
     /** Load daftar Kode Klasifikasi dari API */
     async function loadKodeKlasifikasi() {
         try {
-            const response = await fetch(`${API_BASE}/klasifikasi`);
+            const response = await fetch(`${API_BASE}/klasifikasi/active`);
             if (!response.ok) throw new Error('Gagal mengambil data klasifikasi');
 
             const result = await response.json();
